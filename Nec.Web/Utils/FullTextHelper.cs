@@ -11,8 +11,10 @@ namespace Nec.Web.Utils
 
             var tokens = Regex.Split(input.ToUpper(), @"\s+")
                 .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Where(t => t.Length > 1) 
                 .Distinct()
                 .Select(t => $"\"{t}\"");
+
             return string.Join(" AND ", tokens);
         }
     }

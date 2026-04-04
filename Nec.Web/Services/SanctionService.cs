@@ -609,7 +609,10 @@ namespace Nec.Web.Services
             {
                 SubQuery += string.Format(@" AND (Gender='{0}' OR Gender='UNKNOWN')", model.Gender);
             }
-                Query = string.Format(@"
+
+            SubQuery += " AND IsDelete = 0 ";
+
+            Query = string.Format(@"
                                     SELECT Top 50
                                     AmlId,SourceId,SourceType,EntityType,Gender,[Name],Alias_names,DateOfBirth,OtherInformation,ListDate,PlaceOfBirth,'NonSoundex' as [Type]
                                     FROM AMLSource
@@ -696,7 +699,7 @@ namespace Nec.Web.Services
                                // item.Score = OfacNameMatcher.ComputeScore(model.Name, item.name);
                                // int finalScore = AmlNameMatcher.CalculateScore(model.Name, item.name);
                                 item.Score = FuzzySearch.CalculateScore(model.Name, item.name);
-                                if (item.Score >= 85 && model.IsFuzzy == true)
+                                if (item.Score >= 86 && model.IsFuzzy == true)
                                 {
                                     results.Add(item);
                                 }

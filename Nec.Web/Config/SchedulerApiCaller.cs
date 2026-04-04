@@ -72,7 +72,7 @@ namespace Nec.Web.Config
             {  
                 using var client = new HttpClient
                 {
-                    Timeout = TimeSpan.FromMinutes(30)
+                    Timeout = TimeSpan.FromMinutes(40)
                 };
 
                 string? FileVersion = await sanctionService.GetFileVersion();
@@ -109,11 +109,14 @@ namespace Nec.Web.Config
 
                     int RowId = sanctionService.CreateAMLLog(aMLSourceLog);
                     aMLSourceLog.TotalPrivious = await sanctionService.TotalDataCount();
+                    int Totaldownload = 0;
+
 
                     foreach (var line in jsonArray)
                     {
                         if (string.IsNullOrWhiteSpace(line)) continue;
 
+                        Totaldownload++;
                         ConsolidatedDelta entity = JsonSerializer.Deserialize<ConsolidatedDelta>(line)!;
                         if (entity.type == "UPDATE")
                         {
@@ -137,6 +140,8 @@ namespace Nec.Web.Config
                     aMLSourceLog.TotalNew = TotalNew;
                     aMLSourceLog.TotalUpdate = TotalUpdate;
                     aMLSourceLog.TotalDelete = TotalDelete;
+                    aMLSourceLog.TotalData = Totaldownload;
+
 
                     var res = sanctionService.CreateAMLDataStatusLog(aMLSourceLog);
 
