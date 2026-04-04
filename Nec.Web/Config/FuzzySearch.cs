@@ -8,7 +8,7 @@ namespace Nec.Web.Config
 
         private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
         {
-            "THE","AL","OF","EL","LA","LE","DE","DA","AND","INC","LTD","LLC","COMPANY","MD.","MD"
+            "THE","OF","EL","LA","LE","DE","DA","AND","INC","LTD","LLC","COMPANY"
         };
 
         private static string[] TokenizeWithoutStopWords(string text)

@@ -5,6 +5,7 @@ using Nec.Web.Config;
 using Nec.Web.Helpers;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
+using Nec.Web.Utils;
 using Npgsql;
 using NPOI.SS.Formula.Functions;
 using Raffinert.FuzzySharp;
@@ -597,6 +598,8 @@ namespace Nec.Web.Services
             string SubQuery = string.Empty;
 
             model.Name = TokenizeWithoutStopWords(model.Name);
+            string search = FullTextHelper.ToFullTextQuery(model.Name);
+
 
             if (!string.IsNullOrWhiteSpace(model.DateOfBirth))
             {
@@ -610,7 +613,7 @@ namespace Nec.Web.Services
                                     SELECT Top 50
                                     AmlId,SourceId,SourceType,EntityType,Gender,[Name],Alias_names,DateOfBirth,OtherInformation,ListDate,PlaceOfBirth,'NonSoundex' as [Type]
                                     FROM AMLSource
-                                    WHERE CONTAINS(([Name], Alias_names), '""{0}""') {1}
+                                    WHERE CONTAINS(([Name], Alias_names), @search) {1}
                                     union all
                                     SELECT TOP (1000)
                                         aml.AmlId,
@@ -632,7 +635,7 @@ namespace Nec.Web.Services
                                         SELECT 1
                                         FROM AMLSource s
                                         WHERE s.AmlId = aml.AmlId
-                                        AND CONTAINS(([Name], Alias_names), '""{0}""') 
+                                        AND CONTAINS(([Name], Alias_names), @search) 
                                     ) {1};
                                     ", model.Name,SubQuery);
       
@@ -646,6 +649,8 @@ namespace Nec.Web.Services
 
                 using (var cmd = new SqlCommand(Query, conn))
                 {
+                    cmd.Parameters.AddWithValue("@search", search);
+
                     await conn.OpenAsync();
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -729,6 +734,8 @@ namespace Nec.Web.Services
             string SubQuery = string.Empty;
 
             model.Name = TokenizeWithoutStopWords(model.Name);
+            string search = FullTextHelper.ToFullTextQuery(model.Name);
+
 
             if (!string.IsNullOrWhiteSpace(model.DateOfBirth))
             {
@@ -760,7 +767,7 @@ namespace Nec.Web.Services
             Query = string.Format(@"
                                     SELECT Top 50 *,'NonSoundex' as [Type]
                                     FROM AMLSource
-                                    WHERE CONTAINS(([Name], Alias_names), '""{0}""') {1}
+                                    WHERE CONTAINS(([Name], Alias_names), @search) {1}
                                     union all
                                     SELECT TOP (1000) *,'Soundex' AS [Type]                                    
                                     FROM AMLSource aml
@@ -770,7 +777,7 @@ namespace Nec.Web.Services
                                         SELECT 1
                                         FROM AMLSource s
                                         WHERE s.AmlId = aml.AmlId
-                                        AND CONTAINS(([Name], Alias_names), '""{0}""') 
+                                        AND CONTAINS(([Name], Alias_names), @search) 
                                     ) {1};
                                     ", model.Name, SubQuery);
 
@@ -784,6 +791,8 @@ namespace Nec.Web.Services
 
                 using (var cmd = new SqlCommand(Query, conn))
                 {
+                    cmd.Parameters.AddWithValue("@search", search);
+
                     await conn.OpenAsync();
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -1499,7 +1508,7 @@ namespace Nec.Web.Services
 
         private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
         {
-            "THE","AL","OF","EL","LA","LE","DE","DA","AND","INC","LTD","LLC","COMPANY","MD.","MD"
+            "THE","OF","EL","LA","LE","DE","DA","AND","INC","LTD","LLC","COMPANY"
         };
 
         private static string TokenizeWithoutStopWords(string text)

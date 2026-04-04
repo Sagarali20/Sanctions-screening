@@ -4,7 +4,7 @@
     {
         private static readonly HashSet<string> StopWords = new()
     {
-        "THE","AL","OF","EL","LA","LE","DE","DA",
+        "THE","OF","EL","LA","LE","DE","DA",
         "AND","INC","LTD","LLC","COMPANY"
     };
 

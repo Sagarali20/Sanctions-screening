@@ -129,7 +129,7 @@ namespace Nec.Web.Controllers
                 return NotFound($" File not found: {filePath}");
             }
 
-            Console.WriteLine($" Reading file: {filePath}");
+            //Console.WriteLine($" Reading file: {filePath}");
 
             var options = new JsonSerializerOptions
             {
