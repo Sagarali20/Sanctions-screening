@@ -11,6 +11,8 @@
         public string? Source { get; set; }
         public string? DateOfBirth { get; set; }
         public string? AliasName { get; set; }
-        
+        public int Distance { get; set; }
+        public double score { get; set; }
+
     }
 }

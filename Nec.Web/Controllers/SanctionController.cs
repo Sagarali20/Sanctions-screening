@@ -17,6 +17,7 @@ using Nec.Web.Utils;
 using NPOI.HSSF.UserModel;
 using NPOI.SS.Formula.Functions;
 using PdfSharpCore.Pdf;
+using System.Reflection;
 using System.Text.Json;
 using System.Xml.Serialization;
 using Colors = MigraDocCore.DocumentObjectModel.Colors;
@@ -390,20 +391,40 @@ namespace Nec.Web.Controllers
         public async Task<IActionResult> Getdelta(AMLFilter aMLFilter)
         {
 
+            // List<SearchResult?> res = new List<SearchResult?>();
+            //var  res = await _sanctionService.GetSearchSanction(aMLFilter);
 
-           // List<SearchResult?> res = new List<SearchResult?>();
-            var  res = await _sanctionService.GetSearchSanction(aMLFilter);
+            //var result = res.FuzzySearch(aMLFilter.Name, c => c.Name, 100).Where(x => x.Score >= aMLFilter.TopMatch).Select(c => new
+            //{
+            //    Id=c.Value?.Id,
+            //    Name=c.Value?.Name.ToString(),
+            //    Address=c.Value?.Address.ToString(),
+            //    EntityType = c.Value?.EntityType.ToString(),
+            //    SourceType = c.Value?.SourceType.ToString(),
+            //    SourceId = c.Value?.SourceId.ToString(),
+            //    score= c.Score
+            //}).ToList();
 
-            var result = res.FuzzySearch(aMLFilter.Name, c => c.Name, 100).Where(x => x.Score >= aMLFilter.TopMatch).Select(c => new
-            {
-                Id=c.Value?.Id,
-                Name=c.Value?.Name.ToString(),
-                Address=c.Value?.Address.ToString(),
-                EntityType = c.Value?.EntityType.ToString(),
-                SourceType = c.Value?.SourceType.ToString(),
-                SourceId = c.Value?.SourceId.ToString(),
-                score= c.Score
-            }).ToList();
+            //var results = AMLFilterFuzzyMatcher.SearchByName(res, aMLFilter.Name);
+
+            // List<SearchResult?> res = new List<SearchResult?>();
+
+            var results = await _sanctionService.GetSearchSanctionIndividual(aMLFilter);
+
+            var result = results
+                .Where(x => x.Score >= aMLFilter.TopMatch)
+                .Select(c => new
+                {
+                    Id = c.id,
+                    Name = c.name,
+                    Aliasnames = c.alias_names != null ? string.Join(", ", c.alias_names) : string.Empty,
+                    Address = c.address,
+                    EntityType = c.entity_type,
+                    SourceType = c.source_type,
+                    SourceId = c.source_id,
+                    score = c.Score
+                })
+                .ToList();
 
             return Ok(new {Total= result.Count, Result= result });
         }
