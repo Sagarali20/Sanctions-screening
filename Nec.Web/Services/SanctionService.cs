@@ -609,6 +609,10 @@ namespace Nec.Web.Services
             {
                 SubQuery += string.Format(@" AND (Gender='{0}' OR Gender='UNKNOWN')", model.Gender);
             }
+            if (!string.IsNullOrWhiteSpace(model.SourceType) && model.SourceType != "ALL")
+            {
+                SubQuery += string.Format(@" AND ( SourceType='{0}')", model.SourceType);
+            }
 
             SubQuery += " AND IsDelete = 0 ";
 
@@ -699,7 +703,11 @@ namespace Nec.Web.Services
                                // item.Score = OfacNameMatcher.ComputeScore(model.Name, item.name);
                                // int finalScore = AmlNameMatcher.CalculateScore(model.Name, item.name);
                                 item.Score = FuzzySearch.CalculateScore(model.Name, item.name);
-                                if (item.Score >= 86 && model.IsFuzzy == true)
+
+                                //int Scoreee = Convert.ToInt32(AMLFilterFuzzyMatcher.MatchSingleName(item.name, model.Name).Distance);
+
+                                //if (item.Score >= 86 && model.IsFuzzy == true && 2 >= Scoreee)
+                                if (item.Score >= 90 && model.IsFuzzy == true)
                                 {
                                     results.Add(item);
                                 }
@@ -735,10 +743,14 @@ namespace Nec.Web.Services
 
             string Query = string.Empty;
             string SubQuery = string.Empty;
+            int Distance = 7;
 
             model.Name = TokenizeWithoutStopWords(model.Name);
             string search = FullTextHelper.ToFullTextQuery(model.Name);
-
+            if( 85>= model.MatchParcentage )
+            {
+                Distance = 100;
+            }
 
             if (!string.IsNullOrWhiteSpace(model.DateOfBirth))
             {
@@ -864,7 +876,9 @@ namespace Nec.Web.Services
                             if (item.Type == "Soundex")
                             {
 
-                                item.Score = FuzzySearch.CalculateScore(model.Name, item.name); ;
+                                item.Score = FuzzySearch.CalculateScore(model.Name, item.name);
+                                //int Scoreee = Convert.ToInt32(AMLFilterFuzzyMatcher.MatchSingleName(item.name, model.Name).Distance);
+
                                 if (item.Score >= model.MatchParcentage)
                                 {
                                     results.Add(item);

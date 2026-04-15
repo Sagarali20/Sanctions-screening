@@ -47,28 +47,43 @@ namespace Nec.Web.Utils
 
             return (1.0 - (double)distance / maxLen) * 100;
         }
+        public static NameMatchResult MatchSingleName(string name, string query)
+        {
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(query))
+                return null;
 
-        //public static List<NameMatchResult> SearchByName(List<string> names,string query,int maxDistance = 2,double minMatch = 60)
+            int distance = LevenshteinDistance(name.ToLower(), query.ToLower());
+            double percentage = GetMatchPercentage(name, query);
+
+            return new NameMatchResult
+            {
+                Name = name,
+                Distance = distance,
+                MatchPercentage = percentage
+            };
+        }
+
+        //public static List<NameMatchResult> SearchByName(List<string> names, string query, int maxDistance = 2, double minMatch = 60)
         //{
-        //        query = query.ToLower().Trim();
+        //    query = query.ToLower().Trim();
 
-        //        return names
-        //            .Select(name =>
+        //    return names
+        //        .Select(name =>
+        //        {
+        //            int distance = LevenshteinDistance(name.ToLower(), query);
+        //            double percentage = GetMatchPercentage(name, query);
+
+        //            return new NameMatchResult
         //            {
-        //                int distance = LevenshteinDistance(name.ToLower(), query);
-        //                double percentage = GetMatchPercentage(name, query);
-
-        //                return new NameMatchResult
-        //                {
-        //                    Name = name,
-        //                    Distance = distance,
-        //                    MatchPercentage = percentage
-        //                };
-        //            })
-        //            .Where(x => x.Distance <= maxDistance || x.MatchPercentage >= minMatch)
-        //            .OrderBy(x => x.Distance)
-        //            .ThenByDescending(x => x.MatchPercentage)
-        //            .ToList();
+        //                Name = name,
+        //                Distance = distance,
+        //                MatchPercentage = percentage
+        //            };
+        //        })
+        //        .Where(x => x.Distance <= maxDistance || x.MatchPercentage >= minMatch)
+        //        .OrderBy(x => x.Distance)
+        //        .ThenByDescending(x => x.MatchPercentage)
+        //        .ToList();
         //}
 
         public static List<SearchResult> SearchByName(

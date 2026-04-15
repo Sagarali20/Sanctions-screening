@@ -156,7 +156,7 @@ namespace Nec.Web.Config
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ann error occurs in catch section "+ex.Message);
+                _logger.LogWarning("Ann error occurs in catch section: "+ex.StackTrace);
                
             }
 

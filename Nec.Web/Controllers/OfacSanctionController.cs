@@ -215,7 +215,6 @@ namespace Nec.Web.Controllers
 
                            int id = _ofacService.UpdateOfacSanctionNONSDN(sdnList.SdnEntries);
 
-
                         // Prepare filename and path
                         string fileName = $"Ofac_SDN_consolidated_data_file_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xml";
                         string savePath = Path.Combine(_appConfig.OfacDownloadFilePath, fileName);

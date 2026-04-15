@@ -386,7 +386,7 @@ namespace Nec.Web.Controllers
 
         // Search data by requird parameter from nec system.
         [HttpPost]
-        //[ApiKeyAuthorize]
+        [ApiKeyAuthorize]
         [Route("get-amlfilter")]
         public async Task<IActionResult> Getdelta(AMLFilter aMLFilter)
         {
@@ -427,6 +427,58 @@ namespace Nec.Web.Controllers
                 .ToList();
 
             return Ok(new {Total= result.Count, Result= result });
+        }
+
+        // Search data by requird parameter from nec system.
+        [HttpPost]
+        [ApiKeyAuthorize]
+        [Route("get-amlfilter-status")]
+        public async Task<IActionResult> GetAmlfilterStatus(AMLFilter aMLFilter)
+        {
+            var results = await _sanctionService.GetSearchSanctionIndividual(aMLFilter);
+
+
+            var sanctionList = results
+                .Where(x => string.Equals(x.source_type, "SANCTION", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var pepList = results
+                .Where(x => string.Equals(x.source_type, "PEP", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            string GetStatus(int score) =>
+                score == 100 ? "Positive"
+                : score >= 86 ? "False Positive"
+                : "False Negative";
+
+            int sanctionScore = sanctionList.Any()
+                ? sanctionList.Max(c => c.Score ?? 0)
+                : 0;
+
+            int pepScore = pepList.Any()
+                ? pepList.Max(c => c.Score ?? 0)
+                : 0;
+
+            string sanctionStatus = GetStatus(sanctionScore);
+            string pepStatus = GetStatus(pepScore);
+
+            var result = new
+            {
+                Sanction = new
+                {
+                    Count = sanctionList.Count,
+                    MaxScore = sanctionScore,
+                    Status = sanctionStatus
+                },
+                PEP = new
+                {
+                    Count = pepList.Count,
+                    MaxScore = pepScore,
+                    Status = pepStatus
+                }
+            };
+
+            return Ok(new { Result = result });
         }
 
         // Search data by requird parameter from nec system.
@@ -612,8 +664,6 @@ namespace Nec.Web.Controllers
                 aMLFilter.IsFuzzy = true;
             }
 
-            // List<SearchResult?> res = new List<SearchResult?>();
-
             var results = await _sanctionService.GetSearchSanctionIndividual(aMLFilter);
 
             //var res = Levenshtein.FindClosestPersons(results, aMLFilter.Name,1);
@@ -625,46 +675,6 @@ namespace Nec.Web.Controllers
             //    //var results2 = FuzzySearch.Search(results, names, 1);
             //}
 
-
-
-            //var selected = results2
-            //    .Select((x, index) => new
-            //    {
-            //        x.entity_type,
-            //        x.name,
-            //        x.gender,
-            //        x.source_type,
-            //        x.list_date,
-            //        x.date_of_birth,
-            //        x.alias_names,
-            //        x.last_names,
-            //        x.given_names,
-            //        x.name_remarks,
-            //        x.spouse,
-            //        x.parents,
-            //        x.children,
-            //        x.siblings,
-            //        x.citizenship,
-            //        x.date_of_birth_remarks,
-            //        x.place_of_birth,
-            //        x.place_of_birth_remarks,
-            //        x.address,
-            //        x.address_remarks,
-            //        x.citizenship_remarks,
-            //        x.pep_type,
-            //        x.sanction_details,
-            //        x.description,
-            //        x.occupations,
-            //        x.positions,
-            //        x.political_parties,
-            //        x.links,
-            //        x.titles,
-            //        x.functions,
-            //        x.other_information,
-            //        x.source_id,
-            //        x.Score,
-            //    })
-            //    .ToList().OrderByDescending(a => a.Score);
 
             return Ok(new { timestamp= DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Total_hits = results.Count, Found_records = results.OrderByDescending(a => a.Score) });
         }
@@ -745,6 +755,7 @@ namespace Nec.Web.Controllers
             //        x.Score,
             //    })
             //    .ToList().OrderByDescending(a => a.Score);
+
 
             return Ok(new { timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),City= model.Payload?.City,StateProvince = model.Payload?.StateProvince,Country=model.Payload?.Country, DateOfBirth= model.Payload?.DateOfBirth,Name = model.Payload?.Name, Total_hits = results.Count, Max_match_parcentage= results.OrderByDescending(x => x.Score)
                     .Select(x => x.Score)
