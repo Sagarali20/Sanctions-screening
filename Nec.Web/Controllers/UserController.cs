@@ -17,10 +17,12 @@ using Nec.Web.Utils;
 using NPOI.POIFS.Crypt;
 using NPOI.SS.Formula.Functions;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO.Compression;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using UserInfo = Nec.Web.Models.UserInfo;
 
 namespace Nec.Web.Controllers
@@ -30,10 +32,14 @@ namespace Nec.Web.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly string logPath = @"C:\logs\DilisenseLog";
+        private readonly ILogger<UserController> _logger;
 
-        public UserController(IUserService userService)
+
+        public UserController(IUserService userService, ILogger<UserController> logger)
         {
-            _userService=userService;
+            _userService = userService;
+            _logger = logger;
         }
         //[Authorize]
         [HttpPost]
@@ -243,6 +249,143 @@ namespace Nec.Web.Controllers
 
             var token = jwtTokenHandler.CreateToken(tokenDescriptor);
             return jwtTokenHandler.WriteToken(token);
+        }
+
+        [HttpGet]
+        [Route("DownloadLogs")]
+        public IActionResult DownloadLogs([FromQuery] string date)
+        {
+            if (string.IsNullOrEmpty(date))
+                return BadRequest("Date is required (format: yyyyMMdd)");
+
+            // Validate date format
+            if (!Regex.IsMatch(date, @"^\d{8}$"))
+                return BadRequest("Invalid date format. Use yyyyMMdd");
+
+            // Match both main and split logs
+            string pattern = $@"Serilog_dilisense{date}(_\d+)?\.log";
+            var regex = new Regex(pattern, RegexOptions.IgnoreCase);
+
+            var files = Directory.GetFiles(logPath)
+                                 .Where(f => regex.IsMatch(Path.GetFileName(f)))
+                                 .ToList();
+
+            if (!files.Any())
+                return NotFound("No log files found for this date");
+
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var zip = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                {
+                    foreach (var file in files)
+                    {
+                        var entry = zip.CreateEntry(Path.GetFileName(file));
+
+                        using (var entryStream = entry.Open())
+                        using (var fileStream = new FileStream(
+                            file,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite   
+                        ))
+                        {
+                            fileStream.CopyTo(entryStream);
+                        }
+                    }
+                }
+
+                memoryStream.Position = 0;
+
+                string zipName = $"logs_{date}.zip";
+                return File(memoryStream.ToArray(), "application/zip", zipName);
+            }
+        }
+
+        [HttpGet("download")]
+        public IActionResult DownloadLogs([FromQuery] string date, [FromQuery] string type = "info")
+        {
+            if (string.IsNullOrEmpty(date))
+                return BadRequest("Date is required (format: yyyyMMdd)");
+
+            if (!Regex.IsMatch(date, @"^\d{8}$"))
+                return BadRequest("Invalid date format. Use yyyyMMdd");
+
+            // Determine folder & filename pattern
+            string folderPath;
+            string pattern;
+
+            if (type.ToLower() == "error")
+            {
+                folderPath = Path.Combine(logPath, "error");
+                pattern = $@"error-{date}(_\d+)?\.log";
+            }
+            else
+            {
+                folderPath = Path.Combine(logPath, "info");
+                pattern = $@"log-{date}(_\d+)?\.log";
+            }
+
+            var regex = new Regex(pattern, RegexOptions.IgnoreCase);
+
+            if (!Directory.Exists(folderPath))
+                return NotFound("Log folder not found");
+
+            var files = Directory.GetFiles(folderPath)
+                                 .Where(f => regex.IsMatch(Path.GetFileName(f)))
+                                 .OrderBy(f => f)
+                                 .ToList();
+
+            if (!files.Any())
+                return NotFound("No log files found");
+
+            // ZIP create (safe for multiple files)
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var zip = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
+                {
+                    foreach (var file in files)
+                    {
+                        var entry = zip.CreateEntry(Path.GetFileName(file));
+
+                        using (var entryStream = entry.Open())
+                        using (var fileStream = new FileStream(
+                            file,
+                            FileMode.Open,
+                            FileAccess.Read,
+                            FileShare.ReadWrite   
+                        ))
+                        {
+                            fileStream.CopyTo(entryStream);
+                        }
+                    }
+                }
+
+                memoryStream.Position = 0;
+
+                string zipName = $"{type}_logs_{date}.zip";
+                return File(memoryStream.ToArray(), "application/zip", zipName);
+            }
+        }
+
+
+        [HttpGet("getCheck")]
+        public async Task<IActionResult> getCheck()
+        {
+
+            try
+            {
+               
+                int a = 0,b=1;
+                var c = b / a;
+
+                return Ok("ok");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("An error: " + ex.ToString());
+                return Ok(ex.ToString());
+            }
+
         }
 
         //private async Task<string> CreateRefreshToken()

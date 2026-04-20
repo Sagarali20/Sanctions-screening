@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.EMMA;
 using Nec.Web.Config;
+using Nec.Web.Controllers;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Models.Model;
@@ -12,10 +13,12 @@ namespace Nec.Web.Services
     public class UserService : IUserService
     {
         private IIDbConnection _dbConnection;
+        private readonly ILogger<UserService> _logger;
 
-        public UserService(IIDbConnection iDbConnection) 
+        public UserService(IIDbConnection iDbConnection, ILogger<UserService> logger) 
         {
             _dbConnection= iDbConnection;
+            _logger = logger;
         }
 
         public bool CreateUser(User model) 
@@ -351,6 +354,12 @@ namespace Nec.Web.Services
             catch (Exception ex)
             {
 
+                _logger.LogError("Validate user error: " + ex.ToString());
+
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError("Inner Exception: " + ex.InnerException.ToString());
+                }
                 return model;
             }
 
@@ -455,6 +464,7 @@ namespace Nec.Web.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError("select * from UserRole where 1=1 :"+ ex.ToString());
             }
 
             return lst;

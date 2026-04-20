@@ -128,17 +128,31 @@ app.MapControllers();
 
 
 
-app.MapGet("/", async context =>
-{
-    context.Response.ContentType = "text/html";
-    await context.Response.WriteAsync(@"
-        <html>
-            <head><title>Dilisense</title></head>
-            <body>
-                <p>API is Running</p>
-            </body>
-        </html>");
-});
+//app.MapGet("/", async context =>
+//{
+//    context.Response.ContentType = "text/html";
+//    await context.Response.WriteAsync(@"
+//        <html>
+//            <head><title>Dilisense</title></head>
+//            <body>
+//                <p>API is Running</p>
+//            </body>
+//        </html>");
+//});
+
+app.MapGet("/", () => Results.Content($@"
+    <html>
+        <body style='font-family: sans-serif; text-align: center; padding: 50px;'>
+            <h1 style='color: #2c3e50;'>Nec Money Pty Dilisense sanction screening Backend</h1>
+            <p style='color: #27ae60; font-weight: bold;'>Status: RUNNING</p>
+            <hr/>
+            <p><strong>OS:</strong> {Environment.OSVersion}</p>
+            <p><strong>Timestamp:</strong> {DateTime.Now}</p>
+            <p><strong>.NET Version:</strong> {Environment.Version}</p>
+            <hr/>
+            <small>Environment: Production | Version: 1.0.1</small>
+        </body>
+    </html>", "text/html"));
 
 
 app.Run();

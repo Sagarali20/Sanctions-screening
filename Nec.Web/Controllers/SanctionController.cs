@@ -37,9 +37,11 @@ namespace Nec.Web.Controllers
         private readonly IUKService _UKService;
         private readonly IUNService _UNService;
         NecAppConfig _appConfig;
+        private readonly ILogger<SanctionController> _logger;
+
 
         public SanctionController(ISanctionService sanctionService, NecAppConfig necAppConfig
-            ,ICommonService CommonService,IOfacService OfacService, IUKService uKService,IUNService uNService
+            ,ICommonService CommonService,IOfacService OfacService, IUKService uKService,IUNService uNService, ILogger<SanctionController> logger
             )
         {
             _sanctionService=sanctionService;
@@ -48,6 +50,7 @@ namespace Nec.Web.Controllers
             _OfacService = OfacService;
             _UKService = uKService;
             _UNService = uNService;
+            _logger = logger;
 
         }
 
@@ -1317,7 +1320,7 @@ namespace Nec.Web.Controllers
         /// <summary>
         /// Upload SDN XML file and deserialize it
         /// </summary>
-        [HttpPost("upload")]
+        [HttpPost("upload")] 
         public async Task<IActionResult> UploadSdnXml(IFormFile file)
         {
             if (file == null || file.Length == 0)

@@ -352,7 +352,7 @@ namespace Nec.Web.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError("Getting error from UpdateAMLSource" + ex.Message);
+                    _logger.LogError($"Getting error from UpdateAMLSource id: {model.id}" + ex.Message);
 
                     transaction.Rollback();
                     return false;
@@ -733,6 +733,8 @@ namespace Nec.Web.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError("Individual Check get error : ", ex.ToString());
+ 
             }
             return results;
         }
@@ -1219,44 +1221,52 @@ namespace Nec.Web.Services
             }
             catch (Exception ex)
             {
-
+                _logger.LogError("Error in CreateAMLLog: ", ex.ToString());
                 throw;
             }
         }
         public  int CreateAMLDataStatusLog(AMLSourceLog model)
         {
-            string query = @"
+            try
+            {
+                string query = @"
                         INSERT INTO AMLDataStatusLog (TotalPrivious,TotalDownload, TotalNew, TotalUpdate, TotalDelete,SourceName,SourceLink,SourceCountry,CreatedDate) 
                         VALUES (@TotalPrivious,@TotalDownload, @TotalNew, @TotalUpdate, @TotalDelete,@SourceName,@SourceLink,@SourceCountry,@CreatedDate);";
 
-            using (SqlConnection con = _dbConnection.CreateConnectionsql())
-            {
-                con.Open();
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                using (SqlConnection con = _dbConnection.CreateConnectionsql())
                 {
-                    // Use parameters to avoid SQL injection
-                    cmd.Parameters.AddWithValue("@TotalPrivious", model.TotalPrivious);
-                    cmd.Parameters.AddWithValue("@TotalDownload", model.TotalData);
-                    cmd.Parameters.AddWithValue("@TotalNew", model.TotalNew);
-                    cmd.Parameters.AddWithValue("@TotalUpdate", model.TotalUpdate);
-                    cmd.Parameters.AddWithValue("@TotalDelete", model.TotalDelete);
-                    cmd.Parameters.AddWithValue("@SourceName", model.SourceName);
-                    cmd.Parameters.AddWithValue("@SourceLink", model.SourceLink);
-                    cmd.Parameters.AddWithValue("@SourceCountry", model.SourceCountry);
-                    cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
-
-                    // Return the inserted ID
-                    int row = cmd.ExecuteNonQuery();
-
-                    if (row > 0)
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand(query, con))
                     {
-                        return row;
-                    }
-                    else
-                    {
-                        return 0;
+                        // Use parameters to avoid SQL injection
+                        cmd.Parameters.AddWithValue("@TotalPrivious", model.TotalPrivious);
+                        cmd.Parameters.AddWithValue("@TotalDownload", model.TotalData);
+                        cmd.Parameters.AddWithValue("@TotalNew", model.TotalNew);
+                        cmd.Parameters.AddWithValue("@TotalUpdate", model.TotalUpdate);
+                        cmd.Parameters.AddWithValue("@TotalDelete", model.TotalDelete);
+                        cmd.Parameters.AddWithValue("@SourceName", model.SourceName);
+                        cmd.Parameters.AddWithValue("@SourceLink", model.SourceLink);
+                        cmd.Parameters.AddWithValue("@SourceCountry", model.SourceCountry);
+                        cmd.Parameters.AddWithValue("@CreatedDate", DateTime.Now);
+
+                        // Return the inserted ID
+                        int row = cmd.ExecuteNonQuery();
+
+                        if (row > 0)
+                        {
+                            return row;
+                        }
+                        else
+                        {
+                            return 0;
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error in CreateAMLDataStatusLog: ", ex.ToString());
+                return 0;
             }
         }
 

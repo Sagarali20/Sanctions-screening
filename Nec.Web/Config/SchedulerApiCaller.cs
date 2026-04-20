@@ -45,7 +45,7 @@ namespace Nec.Web.Config
                     _logger.LogInformation("API called at: {time}", DateTimeOffset.Now);
                 }
                 catch (TaskCanceledException)
-                {
+                { 
                     _logger.LogInformation("Midnight API caller cancelled.");
                 }
                 catch (Exception ex)
@@ -98,6 +98,7 @@ namespace Nec.Web.Config
                     string[] jsonArray = responseBody.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     int TotalPrivious = 0, TotalNew = 0, TotalUpdate = 0, TotalDelete = 0;
                      
+                    _logger.LogInformation($"Download successfully done version: {Version} .Total records in the file: {jsonArray.Length}");
 
                     AMLSourceLog aMLSourceLog = new AMLSourceLog();
                     aMLSourceLog.Total = jsonArray.Count();
@@ -156,8 +157,7 @@ namespace Nec.Web.Config
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ann error occurs in catch section: "+ex.StackTrace);
-               
+                _logger.LogWarning("Ann error occurs in catch section: "+ex.ToString());               
             }
 
         }
