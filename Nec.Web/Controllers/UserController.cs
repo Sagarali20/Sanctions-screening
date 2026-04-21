@@ -32,14 +32,18 @@ namespace Nec.Web.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly string logPath = @"C:\logs\DilisenseLog";
+        //private readonly string logPath = @"C:\logs\DilisenseLog";
         private readonly ILogger<UserController> _logger;
+        private readonly IConfiguration _configuration;
+        NecAppConfig _appConfig;
 
 
-        public UserController(IUserService userService, ILogger<UserController> logger)
+        public UserController(IUserService userService, ILogger<UserController> logger, IConfiguration configuration, NecAppConfig appConfig)
         {
             _userService = userService;
             _logger = logger;
+            _configuration = configuration;
+            _appConfig = appConfig;
         }
         //[Authorize]
         [HttpPost]
@@ -230,7 +234,7 @@ namespace Nec.Web.Controllers
         {
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.ASCII.GetBytes("cm9hZGdvbGlxdWlkc2VjcmV0Z3JhbmRtb3RoZXJjb21iaW5lY2hpbGRyZW5jYXZlZXg=");
+            var key = Encoding.ASCII.GetBytes(_appConfig.JWTSecret!);
             var identity = new ClaimsIdentity(new Claim[]
             {
                // new Claim(ClaimTypes.Role,user.Role),
@@ -266,7 +270,7 @@ namespace Nec.Web.Controllers
             string pattern = $@"Serilog_dilisense{date}(_\d+)?\.log";
             var regex = new Regex(pattern, RegexOptions.IgnoreCase);
 
-            var files = Directory.GetFiles(logPath)
+            var files = Directory.GetFiles(_appConfig.logPath!)
                                  .Where(f => regex.IsMatch(Path.GetFileName(f)))
                                  .ToList();
 
@@ -316,12 +320,12 @@ namespace Nec.Web.Controllers
 
             if (type.ToLower() == "error")
             {
-                folderPath = Path.Combine(logPath, "error");
+                folderPath = Path.Combine(_appConfig.logPath!, "error");
                 pattern = $@"error-{date}(_\d+)?\.log";
             }
             else
             {
-                folderPath = Path.Combine(logPath, "info");
+                folderPath = Path.Combine(_appConfig.logPath!, "info");
                 pattern = $@"log-{date}(_\d+)?\.log";
             }
 

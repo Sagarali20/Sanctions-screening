@@ -464,7 +464,7 @@ namespace Nec.Web.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError("select * from UserRole where 1=1 :"+ ex.ToString());
+                _logger.LogError("Get user role error: "+ ex.ToString());
             }
 
             return lst;

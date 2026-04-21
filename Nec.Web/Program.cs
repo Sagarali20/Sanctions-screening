@@ -46,6 +46,8 @@ builder.Services.AddHostedService<SchedulerApiCaller>();
 
 
 //BkashConfig.Initialize(builder.Configuration);
+var jwtSecret = builder.Configuration["JwtSettings:Secret"];
+
 
 builder.Services.Configure<KestrelServerOptions>(o =>
 {
@@ -102,7 +104,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("cm9hZGdvbGlxdWlkc2VjcmV0Z3JhbmRtb3RoZXJjb21iaW5lY2hpbGRyZW5jYXZlZXg=")),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ValidateAudience = false,
             ValidateIssuer = false,
             ClockSkew = TimeSpan.Zero

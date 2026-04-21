@@ -8,7 +8,6 @@ namespace Nec.Web.Config
 {
     public class ApiKeyAuthorizeAttribute : Attribute, IAuthorizationFilter
     {
-
         private const string HeaderName = "x-api-key";
 
         public void OnAuthorization(AuthorizationFilterContext context)
@@ -19,7 +18,7 @@ namespace Nec.Web.Config
             {
                 context.Result = new ContentResult
                 {
-                    StatusCode = (int)HttpStatusCode.Unauthorized,
+                    StatusCode = 401,
                     Content = "Unauthorized: Missing API key header"
                 };
                 return;
@@ -31,24 +30,27 @@ namespace Nec.Web.Config
             {
                 context.Result = new ContentResult
                 {
-                    StatusCode = (int)HttpStatusCode.Unauthorized,
+                    StatusCode = 401,
                     Content = "Unauthorized: Empty API key"
                 };
                 return;
             }
 
-            // Validate API key
+            var config = context.HttpContext.RequestServices
+                .GetRequiredService<IConfiguration>();
+
+            var realApiKey = config["ApiKeySettings:Key"];
+
             var inputHash = ComputeHash(apiKey);
-            var storedHash = GetStoredApiKeyHash();
+            var storedHash = ComputeHash(realApiKey);
 
             if (!SecureEquals(inputHash, storedHash))
             {
                 context.Result = new ContentResult
                 {
-                    StatusCode = (int)HttpStatusCode.Unauthorized,
+                    StatusCode = 401,
                     Content = "Unauthorized: Invalid API key"
                 };
-                return;
             }
         }
 
@@ -57,12 +59,6 @@ namespace Nec.Web.Config
             using var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(apiKey));
             return Convert.ToBase64String(hash);
-        }
-
-        private static string GetStoredApiKeyHash()
-        {
-            var realApiKey = "6b7284fb1fba0492cd2c769c52ca2fc9";
-            return ComputeHash(realApiKey);
         }
 
         private static bool SecureEquals(string a, string b)
@@ -78,6 +74,5 @@ namespace Nec.Web.Config
 
             return result == 0;
         }
-
     }
 }
