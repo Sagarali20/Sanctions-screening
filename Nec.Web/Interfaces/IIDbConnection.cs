@@ -7,5 +7,6 @@ namespace Nec.Web.Interfaces
     public interface IIDbConnection
     {
         SqlConnection CreateConnectionsql();
+        SqlConnection CreateConnectionsqlEft();
     }
 }

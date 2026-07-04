@@ -5,6 +5,7 @@ using Nec.Web.Config;
 using Nec.Web.Helpers;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
+using Nec.Web.Models.DTO;
 using Nec.Web.Utils;
 using Npgsql;
 using NPOI.SS.Formula.Functions;
@@ -21,6 +22,7 @@ namespace Nec.Web.Services
     public class SanctionService : ISanctionService
     {
         public IIDbConnection _dbConnection;
+
         private readonly ILogger<SanctionService> _logger;
 
         public SanctionService(IIDbConnection dbConnection, ILogger<SanctionService> logger )
@@ -85,7 +87,7 @@ namespace Nec.Web.Services
                         SqlParameter outParameter = new SqlParameter("@ResultStatus", SqlDbType.Int)
                         {
                             Direction = ParameterDirection.Output
-                        };
+                        }; 
                         cmd.Parameters.Add(outParameter);
 
                         SqlParameter outErrorParam = new SqlParameter("@ErrorMessage", SqlDbType.NVarChar, -1)
@@ -101,7 +103,7 @@ namespace Nec.Web.Services
                         if (transaction.Connection != null)
                         {
                             transaction.Connection.Close();
-                        }
+                        }  
 
                         if (resultStatus == 1)
                         {
@@ -613,6 +615,11 @@ namespace Nec.Web.Services
             {
                 SubQuery += string.Format(@" AND ( SourceType='{0}')", model.SourceType);
             }
+            if((bool)model.IsRemitter)
+            {
+                SubQuery = string.Empty;
+                SubQuery = string.Format(@" AND (DateOfBirth LIKE '%{0}%' )", model.DateOfBirth);
+            }
 
             SubQuery += " AND IsDelete = 0 ";
 
@@ -620,7 +627,7 @@ namespace Nec.Web.Services
                                     SELECT Top 50
                                     AmlId,SourceId,SourceType,EntityType,Gender,[Name],Alias_names,DateOfBirth,OtherInformation,ListDate,PlaceOfBirth,'NonSoundex' as [Type]
                                     FROM AMLSource
-                                    WHERE CONTAINS(([Name], Alias_names), @search) {1}
+                                    WHERE CONTAINS(([Name], Alias_names,GivenNames), @search) {1}
                                     union all
                                     SELECT TOP (1000)
                                         aml.AmlId,
@@ -642,7 +649,7 @@ namespace Nec.Web.Services
                                         SELECT 1
                                         FROM AMLSource s
                                         WHERE s.AmlId = aml.AmlId
-                                        AND CONTAINS(([Name], Alias_names), @search) 
+                                        AND CONTAINS(([Name], Alias_names,GivenNames), @search) 
                                     ) {1};
                                     ", model.Name,SubQuery);
       
@@ -733,8 +740,7 @@ namespace Nec.Web.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError("Individual Check get error : ", ex.ToString());
- 
+                _logger.LogError("Individual Check get error : "+ ex.Message.ToString()+ ",Message:-- "+ex.StackTrace.ToString());
             }
             return results;
         }
@@ -749,7 +755,7 @@ namespace Nec.Web.Services
 
             model.Name = TokenizeWithoutStopWords(model.Name);
             string search = FullTextHelper.ToFullTextQuery(model.Name);
-            if( 85>= model.MatchParcentage )
+            if( 85 >= model.MatchParcentage )
             {
                 Distance = 100;
             }
@@ -1299,7 +1305,7 @@ namespace Nec.Web.Services
         }
         public async Task<int?> TotalDataCount()
         {
-            string Query = "select top 1 TotalPrivious,TotalDownload from AMLDataStatusLog order by id desc";
+            string Query = "select top 1 TotalPrivious,TotalDownload from AMLDataStatusLog where SourceName='Dilisense' order by id desc";
             int? PrevData = 0;
             try
             {
@@ -1531,6 +1537,43 @@ namespace Nec.Web.Services
 
 
 
+        }
+
+        public async Task<List<ScreeningReport>> GetScreeningReport(string fromDate, string todate)
+        {
+            List<ScreeningReport> list = new List<ScreeningReport>();
+            try
+            {
+                string Query = "select RemittanceNumber,RM.Name+' '+RM.Surname as Remitter,BN.Name+' '+BN.Surname as Beneficiary,SR.HitCountRM,SR.HitCountBnF ,SR.[Status],SR.CreatedDate from ScreeningReport SR\r\nleft join Remitters RM on RM.RemitterID=SR.RemitterID \r\nleft join Beneficiaries BN on BN.BeneficiaryID=SR.BeneficiaryID\r\nwhere SR.[Status] is not null order by Id desc;";
+
+                using (var conn = _dbConnection.CreateConnectionsqlEft())
+                using (var cmd = new SqlCommand(Query, conn))
+                {                     
+                    await conn.OpenAsync();
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            ScreeningReport model = new ScreeningReport
+                            {
+                                RemittanceNumber = reader["RemittanceNumber"].ToString(),
+                                Remitter = reader["Remitter"].ToString()!,
+                                Beneficiary = reader["Beneficiary"].ToString(),  
+                                HitCountRM = Convert.ToInt32(reader["HitCountRM"]),
+                                HitCountBnF = Convert.ToInt32(reader["HitCountBnF"]),
+                                Status = reader["Status"].ToString(),
+                                //Remarks = reader["Remarks"].ToString(),
+                                CreatedDate = reader["CreatedDate"].ToString()
+                            };
+                            list.Add(model);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return list;
         }
 
         private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)

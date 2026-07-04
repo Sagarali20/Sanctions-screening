@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Nec.Web.Models; // ✅ this is the important using!
+using Nec.Web.Models; 
 using Raffinert.FuzzySharp;
 
 
@@ -49,7 +49,6 @@ namespace Nec.Web.Config
                     .OrderByDescending(x => x.Score);
             }
         }
-
 
 }
 

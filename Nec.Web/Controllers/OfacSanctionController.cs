@@ -136,6 +136,7 @@ namespace Nec.Web.Controllers
         public async Task<IActionResult> DownloadSDN()
         {
             string url = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML";
+        
 
             using (HttpClient client = new HttpClient()
             {
@@ -170,7 +171,12 @@ namespace Nec.Web.Controllers
                         string savePath = Path.Combine(_appConfig.OfacDownloadFilePath, fileName);
 
                         // Save the file
-                        using (FileStream fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                        if (contentStream.CanSeek)
+                        {
+                            contentStream.Position = 0;
+                        }
+
+                        using (FileStream fileStream = new FileStream(savePath, FileMode.Create))
                         {
                             await contentStream.CopyToAsync(fileStream);
                         }
@@ -204,7 +210,6 @@ namespace Nec.Web.Controllers
                 {
                     response.EnsureSuccessStatusCode(); // throws if not 2xx
                     SdnList sdnList;
-
 
                     // Get the stream of data
                     using (Stream contentStream = await response.Content.ReadAsStreamAsync())

@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using DocumentFormat.OpenXml.EMMA;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Models.Model;
 using Nec.Web.Utils;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -40,11 +42,13 @@ namespace Nec.Web.Controllers
 
                 var individualElements = xmlDoc.Descendants("INDIVIDUAL");
 
+                List<IndividualModel> models = new List<IndividualModel>();
+
                 foreach (var ind in individualElements)
                 {
                     var model = new IndividualModel
                     {
-                        DataId = (string)ind.Element("DATAID")!,
+                        DataId = (int)ind.Element("DATAID")!,
                         VersionNum = (string)ind.Element("VERSIONNUM")!,
                         FirstName = (string)ind.Element("FIRST_NAME")!,
                         SecondName = (string)ind.Element("SECOND_NAME")!,
@@ -148,8 +152,13 @@ namespace Nec.Web.Controllers
                             .ToList()
                     };
 
-                    _UNService.CreateUNSanction(model);
+                    //_UNService.CreateUNSanction(model);
+
+                    models.Add(model);
                 }
+                _UNService.CreateUNSanction(models);
+
+
             }
 
             return Ok("Ok");

@@ -6,7 +6,7 @@ namespace Nec.Web.Interfaces
     public interface IUKService
     {
         bool CreateUKSanction(Designation model);
-
+        int CreateUKSanctionBulk(Designations model);
         Task<Designation> GetSanctionDetailsById(int id);
     }
 }

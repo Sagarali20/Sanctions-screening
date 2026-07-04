@@ -25,6 +25,7 @@
         public string? Ids { get; set; }
         public string? DocumentType { get; set; }
         public Boolean IsFuzzy { get; set; }
+        public bool? IsRemitter { get; set; }
         public string? UserId { get; set; }
         public string? TotalHitCount { get; set; }
         public string? IpAddress { get; set; }

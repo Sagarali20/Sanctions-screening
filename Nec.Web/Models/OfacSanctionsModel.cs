@@ -78,8 +78,8 @@ namespace Nec.Web.Models
 
         [XmlElement("vesselInfo")]
         public VesselInfo? VesselInfo { get; set; }
-
         public string? DataInfoType { get; set; }
+        public string? SearchText { get; set; }
 
     }
 

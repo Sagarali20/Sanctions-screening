@@ -4,7 +4,7 @@ namespace Nec.Web.Models.Model
 {
     public class IndividualModel
     {
-        public string? DataId { get; set; }
+        public int DataId { get; set; }
         public string? VersionNum { get; set; }
         public string? FirstName { get; set; }
         public string? SecondName { get; set; }
@@ -17,6 +17,8 @@ namespace Nec.Web.Models.Model
         public string? Gender { get; set; }
         public string? Comments { get; set; }
         public string? ListType { get; set; }
+        public string? HashCheck { get; set; }
+        public string? SearchText { get; set; }
         public string? DateOfBirthYear { get; set; }
         public NationalityModel? Nationality { get; set; }
         public LastDayUpdatedModel? LastDayUpdated { get; set; }

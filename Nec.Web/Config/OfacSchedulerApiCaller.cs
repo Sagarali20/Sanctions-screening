@@ -1,24 +1,19 @@
-﻿using System;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+﻿
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Utils;
+using System.Net.Http;
+
 namespace Nec.Web.Config
 {
-    public class SchedulerApiCaller: BackgroundService
+    public class OfacSchedulerApiCaller : BackgroundService
     {
-        private readonly ILogger<SchedulerApiCaller> _logger;
+        private readonly ILogger<OfacSchedulerApiCaller> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         NecAppConfigForAcheduler _appConfig;
-
-        public SchedulerApiCaller(ILogger<SchedulerApiCaller> logger, IHttpClientFactory httpClientFactory, IServiceScopeFactory serviceScopeFactory, NecAppConfigForAcheduler necAppConfig)
+        public OfacSchedulerApiCaller(ILogger<OfacSchedulerApiCaller> logger, IHttpClientFactory httpClientFactory, IServiceScopeFactory serviceScopeFactory, NecAppConfigForAcheduler necAppConfig)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
@@ -29,7 +24,6 @@ namespace Nec.Web.Config
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Midnight API Caller started.");
-
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -45,7 +39,7 @@ namespace Nec.Web.Config
                     _logger.LogInformation("API called at: {time}", DateTimeOffset.Now);
                 }
                 catch (TaskCanceledException)
-                { 
+                {
                     _logger.LogInformation("Midnight API caller cancelled.");
                 }
                 catch (Exception ex)
@@ -54,14 +48,12 @@ namespace Nec.Web.Config
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // wait before retrying
                 }
             }
-
             _logger.LogInformation("Midnight API Caller stopped.");
         }
-
         private async Task CallApiAsync()
         {
             //var client = _httpClientFactory.CreateClient();
-            _logger.LogInformation("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+            _logger.LogInformation("xxxxxxxxxxxxxxxxxxx--OFAC--xxxxxxxxxxxxxxxxxxxxxx");
 
             using var scope = _serviceScopeFactory.CreateScope();
             var sanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
@@ -69,7 +61,7 @@ namespace Nec.Web.Config
             List<SanctionEntity> entities = new();
 
             try
-            {  
+            {
                 using var client = new HttpClient
                 {
                     Timeout = TimeSpan.FromMinutes(40)
@@ -97,7 +89,7 @@ namespace Nec.Web.Config
                     string responseBody = await response.Content.ReadAsStringAsync();
                     string[] jsonArray = responseBody.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     int TotalPrivious = 0, TotalNew = 0, TotalUpdate = 0, TotalDelete = 0;
-                     
+
                     _logger.LogInformation($"Download successfully done version: {Version} .Total records in the file: {jsonArray.Length}");
 
                     AMLSourceLog aMLSourceLog = new AMLSourceLog();
@@ -125,7 +117,7 @@ namespace Nec.Web.Config
                             bool Res = sanctionService.UpdateSanction(entity.record);
                         }
                         else if (entity.type == "ADD")
-                        {  
+                        {
                             TotalNew++;
                             entity.record.VersionId = RowId;
                             bool Res = sanctionService.CreateSanctionNew(entity.record);
@@ -156,11 +148,9 @@ namespace Nec.Web.Config
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ann error occurs in catch section when updating data: "+ex.ToString());               
+                _logger.LogWarning("Ann error occurs in catch section when updating data: " + ex.ToString());
             }
 
         }
     }
-
-
 }

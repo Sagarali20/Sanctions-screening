@@ -43,10 +43,14 @@ namespace Nec.Web.Controllers
 
                     Designations data = (Designations)serializer.Deserialize(reader);
 
-                    foreach(var item in data.DesignationList)
-                    {
-                        _UKService.CreateUKSanction(item);
-                    }
+                    //foreach(var item in data.DesignationList)
+                    //{
+                    //    _UKService.CreateUKSanction(item);
+                    //}
+
+                    _UKService.CreateUKSanctionBulk(data);
+
+
                     return Ok(new
                     {
                         Message = "File uploaded and parsed successfully!",

@@ -1,9 +1,4 @@
-﻿using DocumentFormat.OpenXml.Office2013.Word;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
-using ICSharpCode.SharpZipLib.Core;
-using MathNet.Numerics;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MigraDocCore.DocumentObjectModel;
 using MigraDocCore.DocumentObjectModel.Tables;
@@ -12,12 +7,8 @@ using Nec.Web.Config;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Models.Model;
-using Nec.Web.Services;
 using Nec.Web.Utils;
 using NPOI.HSSF.UserModel;
-using NPOI.SS.Formula.Functions;
-using PdfSharpCore.Pdf;
-using System.Reflection;
 using System.Text.Json;
 using System.Xml.Serialization;
 using Colors = MigraDocCore.DocumentObjectModel.Colors;
@@ -99,8 +90,6 @@ namespace Nec.Web.Controllers
                         aMLSourceLog.SourceLink = url;
                         aMLSourceLog.SourceCountry = "Zurich and Luxembourg";
 
-                        _sanctionService.CreateAMLLog(aMLSourceLog);
-
                         // Save file stream
                         using (Stream contentStream = await response.Content.ReadAsStreamAsync(),
                                      fileStream = new FileStream(_appConfig.DownloadFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
@@ -108,6 +97,8 @@ namespace Nec.Web.Controllers
                             await contentStream.CopyToAsync(fileStream);
 
                         }
+                        _sanctionService.CreateAMLLog(aMLSourceLog);
+
                     }
                 }
             }
@@ -275,7 +266,7 @@ namespace Nec.Web.Controllers
                             {
                                 responsenew.EnsureSuccessStatusCode();
 
-                                // Print response headers
+                                // Print response headers  
                                 Console.WriteLine("Response Headers:");
                                 foreach (var header in responsenew.Headers)
                                 {
@@ -292,9 +283,7 @@ namespace Nec.Web.Controllers
                                 aMLSourceLog.Total = 0;
                                 aMLSourceLog.FileVersion = Version;
                                 aMLSourceLog.SourceCountry = "Zurich and Luxembourg";
-
                                 aMLSourceLog.FileName = "using for file version";
-
                                 aMLSourceLog.SourceName = "Dilisense";
                                 aMLSourceLog.SourceLink = _appConfig.DilisenseUrl + FileVersion;
 
@@ -438,6 +427,8 @@ namespace Nec.Web.Controllers
         [Route("get-amlfilter-status")]
         public async Task<IActionResult> GetAmlfilterStatus(AMLFilter aMLFilter)
         {
+            aMLFilter.IsRemitter = false; // Disable fuzzy search for status check
+
             var results = await _sanctionService.GetSearchSanctionIndividual(aMLFilter);
 
 
@@ -451,7 +442,7 @@ namespace Nec.Web.Controllers
 
             string GetStatus(int score) =>
                 score == 100 ? "Positive"
-                : score >= 86 ? "False Positive"
+                : score >= 90 ? "False Positive"
                 : "False Negative";
 
             int sanctionScore = sanctionList.Any()
@@ -650,7 +641,7 @@ namespace Nec.Web.Controllers
         [HttpGet]
         [ApiKeyAuthorize]
         [Route("checkIndividual")]
-        public async Task<IActionResult> CheckIndividual(string names,int? fuzzy_search,string? dob,string? gender,string? includes,int? screeningid, string? screeningtype)
+        public async Task<IActionResult> CheckIndividual(string names,int? fuzzy_search,string? dob,string? gender,string? includes,int? screeningid, string? screeningtype,bool? isRemitter=false)
         {
 
 
@@ -661,6 +652,7 @@ namespace Nec.Web.Controllers
             aMLFilter.SourceId = includes;
             aMLFilter.ScreeningId = screeningid;
             aMLFilter.ScreeningType = screeningtype;
+            aMLFilter.IsRemitter = isRemitter;
 
             if (fuzzy_search is not null && fuzzy_search !=0)
             {
@@ -1108,7 +1100,7 @@ namespace Nec.Web.Controllers
 
             return Ok(new { Result = words,total= words.Length });
         }
-
+           
         // Get all search data by excel data and download excel format from nec system.
         [HttpPost("upload-and-download-excel")]
         public async Task<IActionResult> UploadXls([FromForm] IFormFile file)                                                                                                 
@@ -1282,6 +1274,15 @@ namespace Nec.Web.Controllers
 
             return Ok(new { sources = res });
         }
+
+        [HttpPost]
+        [Route("get-sanction-report")]
+        public async Task<IActionResult> GetSanctionLog(string from,string to)
+        {
+            var res = await _sanctionService.GetScreeningReport(from,to);
+
+            return Ok(new { Report = res });
+        }
         //[HttpGet]
         //[Route("get-test")] 
         //public async Task<IActionResult> AMLDataStatusSource()
@@ -1330,6 +1331,7 @@ namespace Nec.Web.Controllers
             {
                 SdnList sdnList;
 
+
                 using (var stream = file.OpenReadStream())
                 {
                     XmlSerializer serializer = new XmlSerializer(typeof(SdnList));
@@ -1368,19 +1370,14 @@ namespace Nec.Web.Controllers
 
                 //var result2 = res
                 //            .Where(x => x.Score >= aMLFilter.TopMatch).OrderByDescending(x => x.Score);
-
-
-
-
                 var result2 = res
                 .Where(x => x.Score >= aMLFilter.TopMatch)
-                .GroupBy(x => new { x.Guid, x.Id })   // 👈 composite key
+                .GroupBy(x => new { x.Guid, x.Id })   
                 .Select(g => g
                     .OrderByDescending(x => x.Score)
                     .First()).GroupBy(x => x.Guid)
                     .SelectMany(g => g.OrderByDescending(x => x.Score))
                     .ToList();
-
 
                 //var result = res.Where(x => x?.Score >= aMLFilter.TopMatch).Select(c => new
                 //{

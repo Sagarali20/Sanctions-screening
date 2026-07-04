@@ -1,8 +1,10 @@
 ﻿using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.EMMA;
+using Nec.Web.Controllers;
 using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Models.Model;
+using Nec.Web.Utils;
 using System.Data;
 using System.Data.SqlClient;
 using System.Text.Json;
@@ -12,9 +14,15 @@ namespace Nec.Web.Services
     public class UNService : IUNService
     {
         public IIDbConnection _dbConnection;
-        public UNService(IIDbConnection dbConnection)
+        private readonly ILogger<UNService> _logger;
+        private readonly ISanctionService _sanctionService;
+
+
+        public UNService(IIDbConnection dbConnection, ILogger<UNService> logger, ISanctionService sanctionService)
         {
             _dbConnection = dbConnection;
+            _logger = logger;
+            _sanctionService = sanctionService;
         }
         public bool CreateUNRefDetails(string query)
         {
@@ -209,6 +217,317 @@ namespace Nec.Web.Services
             }
 
             return individualModel;
+        }
+
+        public bool CreateUNSanction(List<IndividualModel> models)
+        {
+            int insert = 0, update = 0, deletedRows = 0;
+
+            AMLSourceLog aMLSourceLog = new AMLSourceLog();
+
+            if (models == null || models.Count == 0)
+                return true;
+
+            using (SqlConnection con = _dbConnection.CreateConnectionsql())
+            {
+                con.Open();
+
+                var existingHashes = new Dictionary<int, string>();
+
+                using (var cmd = new SqlCommand(
+                    "SELECT DataId, HashCheck FROM UNSanction",
+                    con))
+                {
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            existingHashes[Convert.ToInt32( reader["DataId"].ToString())] =
+                                reader["HashCheck"].ToString();
+                        }
+                    }
+                }
+                List<IndividualModel> newRecords = new List<IndividualModel>();
+
+                foreach (var model in models)
+                {
+                    string Check = HashHelper.ComputeSha256Hash(JsonSerializer.Serialize(model));
+                    model.HashCheck = Check;
+
+                    if (existingHashes.TryGetValue(model.DataId, out var dbHash))
+                    {
+                        if (dbHash != Check)
+                        {
+                            update++;
+                            // ********** UPDATE **********
+                            using (var cmd = new SqlCommand(@"
+                                    UPDATE UNSanction
+                                    SET 
+                                          FirstName        = @FirstName
+                                        , SecondName   = @SecondName
+                                        , ThirdName = @ThirdName
+                                        , FourthName          = @FourthName
+                                        , UnListType       = @UnListType
+                                        , ReferenceNumber          = @ReferenceNumber
+                                        , ListedOn      = @ListedOn
+                                        , NameOriginalScript          = @NameOriginalScript
+                                        , Gender      = @Gender
+                                        , ListType           = @ListType
+                                        , DateOfBirthYear  = @DateOfBirthYear
+                                        , Nationality = @Nationality
+                                        , Designation  = @Designation
+                                        , Title       = @Title
+                                        , Address       = @Address
+                                        , Aliases       = @Aliases
+                                        , IndividualDateOfBirth       = @IndividualDateOfBirth
+                                        , IndividualPlaceOfBirth       = @IndividualPlaceOfBirth
+                                        , IndividualDocument       = @IndividualDocument
+                                      
+                                    WHERE DataId = @DataId;
+                                ", con))
+                            {
+                                cmd.Parameters.AddWithValue("@DataId", DbVal(model.DataId) ?? DBNull.Value);
+                                cmd.Parameters.AddWithValue("@FirstName", DbVal(model.FirstName));
+                                cmd.Parameters.AddWithValue("@SecondName", DbVal(model.SecondName));
+                                cmd.Parameters.AddWithValue("@ThirdName", DbVal(model.ThirdName));
+                                cmd.Parameters.AddWithValue("@FourthName", DbVal(model.FourthName));
+                                cmd.Parameters.AddWithValue("@UnListType", DbVal(model.UnListType));
+                                cmd.Parameters.AddWithValue("@ReferenceNumber", DbVal(model.ReferenceNumber));
+                                cmd.Parameters.AddWithValue("@ListedOn", DbVal(model.ListedOn));
+                                cmd.Parameters.AddWithValue("@NameOriginalScript", DbVal(model.NameOriginalScript));
+                                cmd.Parameters.AddWithValue("@Gender", DbVal(model.Gender));
+                                cmd.Parameters.AddWithValue("@ListType", DbVal(model.ListType));
+                                cmd.Parameters.AddWithValue("@DateOfBirthYear", DbVal(model.DateOfBirthYear));
+                                cmd.Parameters.AddWithValue("@Nationality", DbVal(JsonSerializer.Serialize(model.Nationality)));
+                                cmd.Parameters.AddWithValue("@Designation", DbVal(JsonSerializer.Serialize(model.Designation)));
+                                cmd.Parameters.AddWithValue("@Title", DbVal(JsonSerializer.Serialize(model.Title)));
+                                cmd.Parameters.AddWithValue("@Address", DbVal(JsonSerializer.Serialize(model.Address)));
+                                cmd.Parameters.AddWithValue("@Aliases", DbVal(JsonSerializer.Serialize(model.Aliases)));
+                                cmd.Parameters.AddWithValue("@IndividualDateOfBirth", DbVal(JsonSerializer.Serialize(model.IndividualDateOfBirth)));
+                                cmd.Parameters.AddWithValue("@IndividualPlaceOfBirth", DbVal(JsonSerializer.Serialize(model.IndividualPlaceOfBirth)));
+                                cmd.Parameters.AddWithValue("@IndividualDocument", DbVal(JsonSerializer.Serialize(model.IndividualDocument)));
+                                cmd.ExecuteNonQuery();
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        insert++;
+                        newRecords.Add(model);
+
+                    }
+                }
+                if (newRecords.Any())
+                {
+                    try
+                    {
+                        DataTable dt = CreateUNSanctionDataTable(newRecords);
+
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(con))
+                        {
+                            bulkCopy.DestinationTableName = "UNSanction";
+                            bulkCopy.BatchSize = 5000;
+                            bulkCopy.BulkCopyTimeout = 600;
+                            bulkCopy.ColumnMappings.Add("DataId", "DataId");
+                            bulkCopy.ColumnMappings.Add("VersionNum", "VersionNum");
+                            bulkCopy.ColumnMappings.Add("FirstName", "FirstName");
+                            bulkCopy.ColumnMappings.Add("SecondName", "SecondName");
+                            bulkCopy.ColumnMappings.Add("ThirdName", "ThirdName");
+                            bulkCopy.ColumnMappings.Add("FourthName", "FourthName");
+                            bulkCopy.ColumnMappings.Add("UnListType", "UnListType");
+                            bulkCopy.ColumnMappings.Add("ReferenceNumber", "ReferenceNumber");
+                            bulkCopy.ColumnMappings.Add("ListedOn", "ListedOn");
+                            bulkCopy.ColumnMappings.Add("NameOriginalScript", "NameOriginalScript");
+                            bulkCopy.ColumnMappings.Add("Gender", "Gender");
+                            bulkCopy.ColumnMappings.Add("ListType", "ListType");
+                            bulkCopy.ColumnMappings.Add("DateOfBirthYear", "DateOfBirthYear");
+                            bulkCopy.ColumnMappings.Add("Nationality", "Nationality");
+                            bulkCopy.ColumnMappings.Add("LastDayUpdated", "LastDayUpdated");
+                            bulkCopy.ColumnMappings.Add("Designation", "Designation");
+                            bulkCopy.ColumnMappings.Add("Title", "Title");
+                            bulkCopy.ColumnMappings.Add("Address", "Address");
+                            bulkCopy.ColumnMappings.Add("Aliases", "Aliases");
+                            bulkCopy.ColumnMappings.Add("IndividualDateOfBirth", "IndividualDateOfBirth");
+                            bulkCopy.ColumnMappings.Add("IndividualPlaceOfBirth", "IndividualPlaceOfBirth");
+                            bulkCopy.ColumnMappings.Add("IndividualDocument", "IndividualDocument");
+                            bulkCopy.ColumnMappings.Add("HashCheck", "HashCheck");
+                            bulkCopy.ColumnMappings.Add("CreatedDate", "CreatedDate");
+
+                            bulkCopy.WriteToServer(dt);
+
+                        }
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(con))
+                        {
+                            bulkCopy.DestinationTableName = "SanctionNameInfo";
+                            bulkCopy.BatchSize = 5000;
+                            bulkCopy.BulkCopyTimeout = 600;
+
+                            bulkCopy.ColumnMappings.Add("DataId", "RefId");
+                            bulkCopy.ColumnMappings.Add("FirstName", "FirstName");
+                            bulkCopy.ColumnMappings.Add("SecondName", "LastName");
+                            bulkCopy.ColumnMappings.Add("ThirdName", "ThirdName");
+                            bulkCopy.ColumnMappings.Add("FourthName", "FourthName");
+                            bulkCopy.ColumnMappings.Add("Aliases", "Aliases");
+                            bulkCopy.ColumnMappings.Add("SearchText", "SearchText");
+                            bulkCopy.ColumnMappings.Add("SourceType", "SourceType");
+                            bulkCopy.ColumnMappings.Add("CreatedDate", "Created");
+
+                            bulkCopy.WriteToServer(dt);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                        throw;
+                    }
+
+                }
+
+                // ********** DELETE RECORDS NOT IN NEW LIST **********
+
+                var incomingUids = new HashSet<int>(models.Select(x => x.DataId));
+
+                var deleteIds = existingHashes.Keys
+                                             .Where(DataId => !incomingUids.Contains(DataId))
+                                             .ToList();
+
+                if (deleteIds.Any())
+                {
+
+                    try
+                    {
+                        using (SqlCommand deleteCmd = new SqlCommand(
+                                "DELETE FROM SanctionNameInfo WHERE SourceType='UN' AND RefId IN (" + string.Join(",", deleteIds) + "); DELETE FROM UNSanction WHERE DataId IN (" + string.Join(",", deleteIds) + ");", con))
+                        {
+                            deletedRows = Convert.ToInt32(deleteCmd.ExecuteScalar());
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError("An error occurred while updating DELETE FROM SanctionNameInfo,UNSanction: " + e.ToString() + " ErroInfo----->>" + e.StackTrace.ToString());
+                    }
+                }
+                aMLSourceLog.TotalNew = insert;
+                aMLSourceLog.TotalUpdate = update;
+                aMLSourceLog.TotalDelete = deleteIds.Count();
+                aMLSourceLog.TotalData = models.Count();
+                aMLSourceLog.SourceName = "UNSanction";
+                aMLSourceLog.SourceCountry = "U.N.";
+                aMLSourceLog.SourceLink = "https://scsanctions.un.org/resources/xml/en/consolidated.xml";
+                aMLSourceLog.TotalPrivious = TotalDataCount();
+                var res = _sanctionService.CreateAMLDataStatusLog(aMLSourceLog);
+
+
+                return true;
+            }
+
+
+        }
+
+        private DataTable CreateUNSanctionDataTable(List<IndividualModel> models)
+        {
+            DataTable dt = new DataTable();
+
+            dt.Columns.Add("DataId", typeof(int));
+            dt.Columns.Add("VersionNum", typeof(string));
+            dt.Columns.Add("FirstName", typeof(string));
+            dt.Columns.Add("SecondName", typeof(string));
+            dt.Columns.Add("ThirdName", typeof(string));
+            dt.Columns.Add("FourthName", typeof(string));
+            dt.Columns.Add("UnListType", typeof(string));
+            dt.Columns.Add("ReferenceNumber", typeof(string));
+            dt.Columns.Add("ListedOn", typeof(string));
+            dt.Columns.Add("NameOriginalScript", typeof(string));
+            dt.Columns.Add("Gender", typeof(string));
+            dt.Columns.Add("DateOfBirthYear", typeof(string));
+            dt.Columns.Add("ListType", typeof(string));
+            dt.Columns.Add("Nationality", typeof(string));
+            dt.Columns.Add("LastDayUpdated", typeof(string));
+            dt.Columns.Add("Designation", typeof(string));
+            dt.Columns.Add("Title", typeof(string));
+            dt.Columns.Add("Address", typeof(string));
+            dt.Columns.Add("Aliases", typeof(string));
+            dt.Columns.Add("IndividualDateOfBirth", typeof(string));
+            dt.Columns.Add("IndividualPlaceOfBirth", typeof(string));
+            dt.Columns.Add("IndividualDocument", typeof(string));
+            dt.Columns.Add("CreatedDate", typeof(DateTime));
+            dt.Columns.Add("SearchText", typeof(string));
+            dt.Columns.Add("HashCheck", typeof(string));
+            dt.Columns.Add("SourceType", typeof(string));
+
+            foreach (var model in models)
+            {
+                dt.Rows.Add(
+                    model.DataId,
+                    model.VersionNum,
+                    model.FirstName,
+                    model.SecondName,
+                    model.ThirdName,
+                    model.FourthName,
+                    model.UnListType,
+                    model.ReferenceNumber,
+                    model.ListedOn,
+                    model.NameOriginalScript,
+                    model.Gender,
+                    model.DateOfBirthYear,
+                    model.ListType,
+                    JsonSerializer.Serialize(model.Nationality),
+                    JsonSerializer.Serialize(model.LastDayUpdated),
+                    JsonSerializer.Serialize(model.Designation),
+                    JsonSerializer.Serialize(model.Title),
+                    JsonSerializer.Serialize(model.Address),
+                    JsonSerializer.Serialize(model.Aliases),
+                    JsonSerializer.Serialize(model.IndividualDateOfBirth),
+                    JsonSerializer.Serialize(model.IndividualPlaceOfBirth),
+                    JsonSerializer.Serialize(model.IndividualDocument),
+                    DateTime.Now,
+                    model.SearchText = model.FirstName + " " + model.SecondName + " " + model.ThirdName + " " + model.FourthName + " " +
+                    string.Join(" ",
+                      model.Aliases?
+                    .Where(x => !string.IsNullOrWhiteSpace(x.AliasName))
+                    .Select(x => x.AliasName) ?? Enumerable.Empty<string>()),
+                    model.HashCheck,
+                    "UNSanction"
+                    );
+            }
+
+            return dt;
+        }
+        private int? TotalDataCount()
+        {
+            string Query = "select top 1 TotalPrivious,TotalDownload from AMLDataStatusLog where SourceName='UN' order by id desc";
+            int? PrevData = 0;
+
+            try
+            {
+                using (SqlConnection conn = _dbConnection.CreateConnectionsql())
+                using (SqlCommand cmd = new SqlCommand(Query, conn))
+                {
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            PrevData = reader["TotalDownload"] == DBNull.Value
+                                ? (int?)null
+                                : Convert.ToInt32(reader["TotalDownload"]);
+                        }
+                    }
+                }
+
+                return PrevData;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+        private object DbVal(object value)
+        {
+            return value ?? DBNull.Value;
         }
     }
 }

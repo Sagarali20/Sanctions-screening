@@ -47,7 +47,7 @@ namespace Nec.Web.Controllers
         }
         //[Authorize]
         [HttpPost]
-        [ApiKeyAuthorize]
+        //[ApiKeyAuthorize]
         [Route("process")]
         public async Task<IActionResult> SaveUser(User model)
         {
@@ -55,7 +55,6 @@ namespace Nec.Web.Controllers
             //string decrypted = CryptoJsAesDecryptor.Decrypt(model2, "n3cM0n3y#0");
             try
             {
-
 
                 if (model.Payload?.ActionName?.ToUpper()== "NEW")
                 {
@@ -182,9 +181,9 @@ namespace Nec.Web.Controllers
             }
 
         }
-        [Authorize]
+        //[Authorize]
         [HttpPost]
-        [ApiKeyAuthorize]
+        //[ApiKeyAuthorize]
         [Route("GetRole")]
         public async Task<IActionResult> GetRole(UserInfoRequest userRequest)
         {
@@ -297,9 +296,7 @@ namespace Nec.Web.Controllers
                         }
                     }
                 }
-
                 memoryStream.Position = 0;
-
                 string zipName = $"logs_{date}.zip";
                 return File(memoryStream.ToArray(), "application/zip", zipName);
             }

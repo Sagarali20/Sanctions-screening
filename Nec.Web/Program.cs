@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Presentation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Options;
@@ -33,7 +34,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<DbContext>();
 builder.Services.AddScoped<NecAppConfig>();
 builder.Services.AddSingleton<NecAppConfigForAcheduler>();
-;
 
 builder.Services.AddScoped<IIDbConnection,DbConnection>();
 builder.Services.AddScoped<ISanctionService,SanctionService>();
@@ -42,6 +42,8 @@ builder.Services.AddScoped<IUNService, UNService>();
 builder.Services.AddScoped<IUKService, UKService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHostedService<SchedulerApiCaller>();
+builder.Services.AddHostedService<SchedulerApiCaller>();
 builder.Services.AddHostedService<SchedulerApiCaller>();
 
 
@@ -85,11 +87,22 @@ builder.Services.AddSwaggerGen(opt =>
 
 
 // Secure CORS Policy
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("corspolicy", policy =>
+//    {
+//        policy.WithOrigins()
+//              .AllowAnyMethod()
+//              .AllowAnyHeader();
+//    });
+//});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("corspolicy", policy =>
     {
-        policy.WithOrigins("*")
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://uat-sanction.necpay.eu","http://uat-sanction.necpay.eu")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -122,11 +135,17 @@ var app = builder.Build();
 // Configure Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseCors("corspolicy");
+
 app.UseRouting();
+
+app.UseCors("corspolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
+app.Run();
 
 
 
@@ -145,12 +164,10 @@ app.MapControllers();
 app.MapGet("/", () => Results.Content($@"
     <html>
         <body style='font-family: sans-serif; text-align: center; padding: 50px;'>
-            <h1 style='color: #2c3e50;'>Nec Money Pty Dilisense sanction screening Backend</h1>
+            <h1 style='color: #2c3e50;'>Dilisense sanction screening API</h1>
             <p style='color: #27ae60; font-weight: bold;'>Status: RUNNING</p>
             <hr/>
-            <p><strong>OS:</strong> {Environment.OSVersion}</p>
             <p><strong>Timestamp:</strong> {DateTime.Now}</p>
-            <p><strong>.NET Version:</strong> {Environment.Version}</p>
             <hr/>
             <small>Environment: Production | Version: 1.0.1</small>
         </body>

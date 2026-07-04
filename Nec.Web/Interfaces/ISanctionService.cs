@@ -1,4 +1,5 @@
 ﻿using Nec.Web.Models;
+using Nec.Web.Models.DTO;
 using System.Collections.Generic;
 
 namespace Nec.Web.Interfaces
@@ -22,6 +23,7 @@ namespace Nec.Web.Interfaces
         int CreateAMLDataStatusLog(AMLSourceLog model);
         Task<List<AMLSourceLog>> GetAllSourceLog(string from,string to);
         Task<List<Source>> GetAllSourceList();
+        Task<List<ScreeningReport>> GetScreeningReport(string fromDate,string todate);
         Task<List<AMLSourceLog>> GetAllDataStatusLog(string from,string to);
         Task<string?> GetFileVersion();
         Task<int?> TotalDataCount();

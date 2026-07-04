@@ -28,6 +28,7 @@ namespace Nec.Web.Models
         public SanctionsImposedIndicators SanctionsImposedIndicators { get; set; }
         public string OtherInformation { get; set; }
         public string UKStatementofReasons { get; set; }
+        public string HashCheck { get; set; }
         public IndividualDetails IndividualDetails { get; set; }
     }
 
