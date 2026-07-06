@@ -225,6 +225,8 @@ namespace Nec.Web.Services
                     }
                 }
                 List<Designation> newRecords = new List<Designation>();
+                List<Designation> updateRecords = new List<Designation>();
+
 
                 foreach (var model in models)
                 {
@@ -236,45 +238,47 @@ namespace Nec.Web.Services
                         if (dbHash != Check)
                         {
                             update++;
+
+                            updateRecords.Add(model);
                             // ********** UPDATE **********
-                            using (var cmd = new SqlCommand(@"
-                                    UPDATE OfacSanction
-                                    SET 
-                                          LastUpdated        = @LastUpdated
-                                        , DateDesignated   = @DateDesignated
-                                        , UNReferenceNumber = @UNReferenceNumber
-                                        , Names          = @Names
-                                        , NonLatinNames       = @NonLatinNames
-                                        , Titles          = @Titles
-                                        , RegimeName      = @RegimeName
-                                        , IndividualEntityShip          = @IndividualEntityShip
-                                        , DesignationSource      = @DesignationSource
-                                        , SanctionsImposed           = @SanctionsImposed
-                                        , SanctionsImposedIndicators  = @SanctionsImposedIndicators
-                                        , OtherInformation = @OtherInformation
-                                        , UKStatementofReasons  = @UKStatementofReasons
-                                        , IndividualDetails       = @IndividualDetails
+                            //using (var cmd = new SqlCommand(@"
+                            //        UPDATE OfacSanction
+                            //        SET 
+                            //              LastUpdated        = @LastUpdated
+                            //            , DateDesignated   = @DateDesignated
+                            //            , UNReferenceNumber = @UNReferenceNumber
+                            //            , Names          = @Names
+                            //            , NonLatinNames       = @NonLatinNames
+                            //            , Titles          = @Titles
+                            //            , RegimeName      = @RegimeName
+                            //            , IndividualEntityShip          = @IndividualEntityShip
+                            //            , DesignationSource      = @DesignationSource
+                            //            , SanctionsImposed           = @SanctionsImposed
+                            //            , SanctionsImposedIndicators  = @SanctionsImposedIndicators
+                            //            , OtherInformation = @OtherInformation
+                            //            , UKStatementofReasons  = @UKStatementofReasons
+                            //            , IndividualDetails       = @IndividualDetails
                                       
-                                    WHERE UniqueID = @UniqueID;
-                                ", con))
-                            {
-                                cmd.Parameters.AddWithValue("@UniqueID", DbVal(model.UniqueID) ?? DBNull.Value);
-                                cmd.Parameters.AddWithValue("@LastUpdated", DbVal(model.LastUpdated));
-                                cmd.Parameters.AddWithValue("@DateDesignated", DbVal(model.DateDesignated));
-                                cmd.Parameters.AddWithValue("@UNReferenceNumber", DbVal(model.UNReferenceNumber));
-                                cmd.Parameters.AddWithValue("@Names", DbVal(model.Names));
-                                cmd.Parameters.AddWithValue("@NonLatinNames", DbVal(model.NonLatinNames));
-                                cmd.Parameters.AddWithValue("@Titles", DbVal(JsonSerializer.Serialize(model.Titles)));
-                                cmd.Parameters.AddWithValue("@RegimeName", DbVal(JsonSerializer.Serialize(model.RegimeName)));
-                                cmd.Parameters.AddWithValue("@IndividualEntityShip", DbVal(JsonSerializer.Serialize(model.IndividualEntityShip)));
-                                cmd.Parameters.AddWithValue("@DesignationSource", DbVal(JsonSerializer.Serialize(model.DesignationSource)));
-                                cmd.Parameters.AddWithValue("@SanctionsImposed", DbVal(JsonSerializer.Serialize(model.SanctionsImposed)));
-                                cmd.Parameters.AddWithValue("@SanctionsImposedIndicators", DbVal(JsonSerializer.Serialize(model.SanctionsImposedIndicators)));
-                                cmd.Parameters.AddWithValue("@OtherInformation", DbVal(JsonSerializer.Serialize(model.OtherInformation)));
-                                cmd.Parameters.AddWithValue("@UKStatementofReasons", DbVal(JsonSerializer.Serialize(model.UKStatementofReasons)));
-                                cmd.Parameters.AddWithValue("@IndividualDetails", DbVal(JsonSerializer.Serialize(model.IndividualDetails)));
-                                cmd.ExecuteNonQuery();
-                            }
+                            //        WHERE UniqueID = @UniqueID;
+                            //    ", con))
+                            //{
+                            //    cmd.Parameters.AddWithValue("@UniqueID", DbVal(model.UniqueID) ?? DBNull.Value);
+                            //    cmd.Parameters.AddWithValue("@LastUpdated", DbVal(model.LastUpdated));
+                            //    cmd.Parameters.AddWithValue("@DateDesignated", DbVal(model.DateDesignated));
+                            //    cmd.Parameters.AddWithValue("@UNReferenceNumber", DbVal(model.UNReferenceNumber));
+                            //    cmd.Parameters.AddWithValue("@Names", DbVal(model.Names));
+                            //    cmd.Parameters.AddWithValue("@NonLatinNames", DbVal(model.NonLatinNames));
+                            //    cmd.Parameters.AddWithValue("@Titles", DbVal(JsonSerializer.Serialize(model.Titles)));
+                            //    cmd.Parameters.AddWithValue("@RegimeName", DbVal(JsonSerializer.Serialize(model.RegimeName)));
+                            //    cmd.Parameters.AddWithValue("@IndividualEntityShip", DbVal(JsonSerializer.Serialize(model.IndividualEntityShip)));
+                            //    cmd.Parameters.AddWithValue("@DesignationSource", DbVal(JsonSerializer.Serialize(model.DesignationSource)));
+                            //    cmd.Parameters.AddWithValue("@SanctionsImposed", DbVal(JsonSerializer.Serialize(model.SanctionsImposed)));
+                            //    cmd.Parameters.AddWithValue("@SanctionsImposedIndicators", DbVal(JsonSerializer.Serialize(model.SanctionsImposedIndicators)));
+                            //    cmd.Parameters.AddWithValue("@OtherInformation", DbVal(JsonSerializer.Serialize(model.OtherInformation)));
+                            //    cmd.Parameters.AddWithValue("@UKStatementofReasons", DbVal(JsonSerializer.Serialize(model.UKStatementofReasons)));
+                            //    cmd.Parameters.AddWithValue("@IndividualDetails", DbVal(JsonSerializer.Serialize(model.IndividualDetails)));
+                            //    cmd.ExecuteNonQuery();
+                            //}
 
                         }
                     }
@@ -284,6 +288,10 @@ namespace Nec.Web.Services
                         newRecords.Add(model);
      
                     }
+                }
+                if(updateRecords.Any())
+                {
+                    BulkUpdateUKSanction(updateRecords, con);
                 }
                 if (newRecords.Any())
                 {
@@ -443,6 +451,122 @@ namespace Nec.Web.Services
                 );
             }
             return dt;
+        }
+        private DataTable CreateUKUpdateDataTable(List<Designation> list)
+        {
+            DataTable dt = new DataTable();
+
+            dt.Columns.Add("UniqueID", typeof(string));
+            dt.Columns.Add("LastUpdated", typeof(string));
+            dt.Columns.Add("DateDesignated", typeof(string));
+            dt.Columns.Add("UNReferenceNumber", typeof(string));
+            dt.Columns.Add("Names", typeof(string));
+            dt.Columns.Add("NonLatinNames", typeof(string));
+            dt.Columns.Add("Titles", typeof(string));
+            dt.Columns.Add("RegimeName", typeof(string));
+            dt.Columns.Add("IndividualEntityShip", typeof(string));
+            dt.Columns.Add("DesignationSource", typeof(string));
+            dt.Columns.Add("SanctionsImposed", typeof(string));
+            dt.Columns.Add("SanctionsImposedIndicators", typeof(string));
+            dt.Columns.Add("OtherInformation", typeof(string));
+            dt.Columns.Add("UKStatementofReasons", typeof(string));
+            dt.Columns.Add("IndividualDetails", typeof(string));
+
+            foreach (var model in list)
+            {
+                dt.Rows.Add(
+                    model.UniqueID,
+                    model.LastUpdated,
+                    model.DateDesignated,
+                    model.UNReferenceNumber,
+                    JsonSerializer.Serialize(model.Names),
+                    JsonSerializer.Serialize(model.NonLatinNames),
+                    JsonSerializer.Serialize(model.Titles),
+                    model.RegimeName,
+                    model.IndividualEntityShip,
+                    model.DesignationSource,
+                    model.SanctionsImposed,
+                    JsonSerializer.Serialize(model.SanctionsImposedIndicators),
+                    model.OtherInformation,
+                    model.UKStatementofReasons,
+                    JsonSerializer.Serialize(model.IndividualDetails)
+                );
+            }
+
+            return dt;
+        }
+
+        private void BulkUpdateUKSanction(List<Designation> updateRecords, SqlConnection con)
+        {
+            if (updateRecords.Count == 0)
+                return;
+
+            DataTable dt = CreateUKUpdateDataTable(updateRecords);
+
+            // Create temp table
+            using (SqlCommand cmd = new SqlCommand(@"
+                    CREATE TABLE #TempUKSanction
+                    (
+                        UniqueID INT,
+                        LastUpdated DATETIME,
+                        DateDesignated NVARCHAR(MAX),
+                        UNReferenceNumber NVARCHAR(MAX),
+                        Names NVARCHAR(MAX),
+                        NonLatinNames NVARCHAR(MAX),
+                        Titles NVARCHAR(MAX),
+                        RegimeName NVARCHAR(MAX),
+                        IndividualEntityShip NVARCHAR(MAX),
+                        DesignationSource NVARCHAR(MAX),
+                        SanctionsImposed NVARCHAR(MAX),
+                        SanctionsImposedIndicators NVARCHAR(MAX),
+                        OtherInformation NVARCHAR(MAX),
+                        UKStatementofReasons NVARCHAR(MAX),
+                        IndividualDetails NVARCHAR(MAX)
+                    )", con))
+                            {
+                                cmd.ExecuteNonQuery();
+                            }
+
+            // Bulk copy
+            using (SqlBulkCopy bulk = new SqlBulkCopy(con))
+            {
+                bulk.DestinationTableName = "#TempUKSanction";
+                bulk.BatchSize = 5000;
+                bulk.BulkCopyTimeout = 600;
+
+                bulk.WriteToServer(dt);
+            }
+
+            // Bulk Update
+            using (SqlCommand cmd = new SqlCommand(@"
+                    UPDATE T
+                    SET
+                          T.LastUpdated                 = S.LastUpdated
+                        , T.DateDesignated              = S.DateDesignated
+                        , T.UNReferenceNumber           = S.UNReferenceNumber
+                        , T.Names                       = S.Names
+                        , T.NonLatinNames               = S.NonLatinNames
+                        , T.Titles                      = S.Titles
+                        , T.RegimeName                  = S.RegimeName
+                        , T.IndividualEntityShip        = S.IndividualEntityShip
+                        , T.DesignationSource           = S.DesignationSource
+                        , T.SanctionsImposed            = S.SanctionsImposed
+                        , T.SanctionsImposedIndicators  = S.SanctionsImposedIndicators
+                        , T.OtherInformation            = S.OtherInformation
+                        , T.UKStatementofReasons        = S.UKStatementofReasons
+                        , T.IndividualDetails           = S.IndividualDetails
+                    FROM UKSanction T
+                    INNER JOIN #TempUKSanction S
+                        ON T.UniqueID = S.UniqueID;", con))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+
+            // Drop temp table
+            using (SqlCommand cmd = new SqlCommand("DROP TABLE #TempUKSanction;", con))
+            {
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public int CreateUKSanctionBulk(Designations model)

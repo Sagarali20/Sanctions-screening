@@ -299,6 +299,8 @@ namespace Nec.Web.Services
                         }
                     }
                     List<SdnEntry> newRecords = new List<SdnEntry>();
+                    List<SdnEntry> updateRecords = new List<SdnEntry>();
+
 
                     foreach (var model in lst)
                     {
@@ -306,63 +308,65 @@ namespace Nec.Web.Services
 
                         model.DataInfoType = "SDN";
                         // ********** CHECK IF EXISTS **********
-                        string HashCheck = "";
-                        using (var checkCmd = new SqlCommand("SELECT HashCheck FROM OfacSanction WHERE Uid = @Uid AND DataInfo='SDN'", connection))
-                        {
-                            checkCmd.Parameters.AddWithValue("@Uid", model.Uid);
-                            object result = checkCmd.ExecuteScalar();
+                        //string HashCheck = "";
+                        //using (var checkCmd = new SqlCommand("SELECT HashCheck FROM OfacSanction WHERE Uid = @Uid AND DataInfo='SDN'", connection))
+                        //{
+                        //    checkCmd.Parameters.AddWithValue("@Uid", model.Uid);
+                        //    object result = checkCmd.ExecuteScalar();
 
-                            if (result != null && result != DBNull.Value)
-                            {
-                                HashCheck = result.ToString();
-                            }
-                        }
+                        //    if (result != null && result != DBNull.Value)
+                        //    {
+                        //        HashCheck = result.ToString();      
+                        //    }
+                        //}
                         if (existingHashes.TryGetValue(model.Uid, out var dbHash))
                         {
                             if (dbHash != Check)
                             {
                                 update++;
                                 // ********** UPDATE **********
-                                using (var cmd = new SqlCommand(@"
-                                    UPDATE OfacSanction
-                                    SET 
-                                          FirstName        = @FirstName
-                                        , LastName         = @LastName
-                                        , Title            = Title
-                                        , SdnType          = @SdnType
-                                        , EntityType       = @EntityType
-                                        , Remarks          = @Remarks
-                                        , ProgramList      = @ProgramList
-                                        , AkaList          = @AkaList
-                                        , AddressList      = @AddressList
-                                        , IdList           = @IdList
-                                        , DateOfBirthList  = @DateOfBirthList
-                                        , PlaceOfBirthList = @PlaceOfBirthList
-                                        , NationalityList  = @NationalityList
-                                        , VesselInfo       = @VesselInfo
-                                        , DataInfo         = @DataInfo
-                                    WHERE Uid = @Uid AND DataInfo='SDN';
-                                ", connection))
-                                {
-                                    cmd.Parameters.AddWithValue("@Uid", DbVal(model.Uid) ?? DBNull.Value);
-                                    cmd.Parameters.AddWithValue("@FirstName", DbVal(model.FirstName));
-                                    cmd.Parameters.AddWithValue("@LastName", DbVal(model.LastName));
-                                    cmd.Parameters.AddWithValue("@Title", DbVal(model.Title));
-                                    cmd.Parameters.AddWithValue("@SdnType", DbVal(model.SdnType));
-                                    cmd.Parameters.AddWithValue("@EntityType", DbVal(model.EntityType));
-                                    cmd.Parameters.AddWithValue("@Remarks", DbVal(JsonSerializer.Serialize(model.Remarks)));
-                                    cmd.Parameters.AddWithValue("@ProgramList", DbVal(JsonSerializer.Serialize(model.ProgramList)));
-                                    cmd.Parameters.AddWithValue("@AkaList", DbVal(JsonSerializer.Serialize(model.AkaList)));
-                                    cmd.Parameters.AddWithValue("@AddressList", DbVal(JsonSerializer.Serialize(model.AddressList)));
-                                    cmd.Parameters.AddWithValue("@IdList", DbVal(JsonSerializer.Serialize(model.IdList)));
-                                    cmd.Parameters.AddWithValue("@DateOfBirthList", DbVal(JsonSerializer.Serialize(model.DateOfBirthList)));
-                                    cmd.Parameters.AddWithValue("@PlaceOfBirthList", DbVal(JsonSerializer.Serialize(model.PlaceOfBirthList)));
-                                    cmd.Parameters.AddWithValue("@NationalityList", DbVal(JsonSerializer.Serialize(model.NationalityList)));
-                                    cmd.Parameters.AddWithValue("@VesselInfo", DbVal(JsonSerializer.Serialize(model.VesselInfo)));
-                                    cmd.Parameters.AddWithValue("@DataInfo", DbVal(model.DataInfoType));
+                                updateRecords.Add(model);
 
-                                    cmd.ExecuteNonQuery();
-                                }
+                                //using (var cmd = new SqlCommand(@"
+                                //    UPDATE OfacSanction
+                                //    SET 
+                                //          FirstName        = @FirstName
+                                //        , LastName         = @LastName
+                                //        , Title            = Title
+                                //        , SdnType          = @SdnType
+                                //        , EntityType       = @EntityType
+                                //        , Remarks          = @Remarks
+                                //        , ProgramList      = @ProgramList
+                                //        , AkaList          = @AkaList
+                                //        , AddressList      = @AddressList
+                                //        , IdList           = @IdList
+                                //        , DateOfBirthList  = @DateOfBirthList
+                                //        , PlaceOfBirthList = @PlaceOfBirthList
+                                //        , NationalityList  = @NationalityList
+                                //        , VesselInfo       = @VesselInfo
+                                //        , DataInfo         = @DataInfo
+                                //    WHERE Uid = @Uid AND DataInfo='SDN';
+                                //", connection))
+                                //{
+                                //    cmd.Parameters.AddWithValue("@Uid", DbVal(model.Uid) ?? DBNull.Value);
+                                //    cmd.Parameters.AddWithValue("@FirstName", DbVal(model.FirstName));
+                                //    cmd.Parameters.AddWithValue("@LastName", DbVal(model.LastName));
+                                //    cmd.Parameters.AddWithValue("@Title", DbVal(model.Title));
+                                //    cmd.Parameters.AddWithValue("@SdnType", DbVal(model.SdnType));
+                                //    cmd.Parameters.AddWithValue("@EntityType", DbVal(model.EntityType));
+                                //    cmd.Parameters.AddWithValue("@Remarks", DbVal(JsonSerializer.Serialize(model.Remarks)));
+                                //    cmd.Parameters.AddWithValue("@ProgramList", DbVal(JsonSerializer.Serialize(model.ProgramList)));
+                                //    cmd.Parameters.AddWithValue("@AkaList", DbVal(JsonSerializer.Serialize(model.AkaList)));
+                                //    cmd.Parameters.AddWithValue("@AddressList", DbVal(JsonSerializer.Serialize(model.AddressList)));
+                                //    cmd.Parameters.AddWithValue("@IdList", DbVal(JsonSerializer.Serialize(model.IdList)));
+                                //    cmd.Parameters.AddWithValue("@DateOfBirthList", DbVal(JsonSerializer.Serialize(model.DateOfBirthList)));
+                                //    cmd.Parameters.AddWithValue("@PlaceOfBirthList", DbVal(JsonSerializer.Serialize(model.PlaceOfBirthList)));
+                                //    cmd.Parameters.AddWithValue("@NationalityList", DbVal(JsonSerializer.Serialize(model.NationalityList)));
+                                //    cmd.Parameters.AddWithValue("@VesselInfo", DbVal(JsonSerializer.Serialize(model.VesselInfo)));
+                                //    cmd.Parameters.AddWithValue("@DataInfo", DbVal(model.DataInfoType));
+
+                                //    cmd.ExecuteNonQuery();
+                                //}
                                 // SaveOfacName(model, model.Uid, model.DataInfoType);
 
                             }
@@ -444,6 +448,11 @@ namespace Nec.Web.Services
                             //}
                         }
                     }
+
+                    if(updateRecords.Any())
+                    {
+                        BulkUpdateOfac(updateRecords, connection);
+                    }
                     if (newRecords.Any())
                     {
                         DataTable dt = CreateOfacDataTable(newRecords);
@@ -507,7 +516,7 @@ namespace Nec.Web.Services
                     if(deleteIds.Any())
                     {
                          using (var deleteCmd = new SqlCommand(
-                                "DELETE FROM SanctionNameInfo WHERE SourceType='Ofac-SDN' AND RefId IN (" + string.Join(",", deleteIds) + "); DELETE FROM OfacSanction WHERE SourceType='SDN' AND Uid IN (" + string.Join(",", deleteIds) + ");", connection))
+                                "DELETE FROM SanctionNameInfo WHERE SourceType='Ofac-SDN' AND RefId IN (" + string.Join(",", deleteIds) + "); DELETE FROM OfacSanction WHERE  Uid IN (" + string.Join(",", deleteIds) + ");", connection))
                             {
                                 deletedRows = Convert.ToInt32(deleteCmd.ExecuteScalar());
                             }
@@ -894,6 +903,130 @@ namespace Nec.Web.Services
             }
 
             return dt;
+        }
+
+        private DataTable CreateUpdateDataTable(List<SdnEntry> list)
+        {
+            DataTable dt = new DataTable();
+
+            dt.Columns.Add("Uid", typeof(int));
+            dt.Columns.Add("FirstName");
+            dt.Columns.Add("LastName");
+            dt.Columns.Add("Title");
+            dt.Columns.Add("SdnType");
+            dt.Columns.Add("EntityType");
+            dt.Columns.Add("Remarks");
+            dt.Columns.Add("ProgramList");
+            dt.Columns.Add("AkaList");
+            dt.Columns.Add("AddressList");
+            dt.Columns.Add("IdList");
+            dt.Columns.Add("DateOfBirthList");
+            dt.Columns.Add("PlaceOfBirthList");
+            dt.Columns.Add("NationalityList");
+            dt.Columns.Add("VesselInfo");
+            dt.Columns.Add("DataInfo");
+            dt.Columns.Add("HashCheck");
+
+            foreach (var model in list)
+            {
+                dt.Rows.Add(
+                    model.Uid,
+                    model.FirstName,
+                    model.LastName,
+                    model.Title,
+                    model.SdnType,
+                    model.EntityType,
+                    JsonSerializer.Serialize(model.Remarks),
+                    JsonSerializer.Serialize(model.ProgramList),
+                    JsonSerializer.Serialize(model.AkaList),
+                    JsonSerializer.Serialize(model.AddressList),
+                    JsonSerializer.Serialize(model.IdList),
+                    JsonSerializer.Serialize(model.DateOfBirthList),
+                    JsonSerializer.Serialize(model.PlaceOfBirthList),
+                    JsonSerializer.Serialize(model.NationalityList),
+                    JsonSerializer.Serialize(model.VesselInfo),
+                    "SDN",
+                    HashHelper.ComputeSha256Hash(JsonSerializer.Serialize(model))
+                );
+            }
+
+            return dt;
+        }
+
+        private void BulkUpdateOfac(List<SdnEntry> updateRecords, SqlConnection connection)
+        {
+            if (updateRecords.Count == 0)
+                return;
+
+            DataTable dt = CreateUpdateDataTable(updateRecords);
+
+
+            using (SqlCommand cmd = new SqlCommand(@"
+                    CREATE TABLE #TempOfacUpdate
+                    (
+                        Uid INT,
+                        FirstName NVARCHAR(MAX),
+                        LastName NVARCHAR(MAX),
+                        Title NVARCHAR(MAX),
+                        SdnType NVARCHAR(MAX),
+                        EntityType NVARCHAR(MAX),
+                        Remarks NVARCHAR(MAX),
+                        ProgramList NVARCHAR(MAX),
+                        AkaList NVARCHAR(MAX),
+                        AddressList NVARCHAR(MAX),
+                        IdList NVARCHAR(MAX),
+                        DateOfBirthList NVARCHAR(MAX),
+                        PlaceOfBirthList NVARCHAR(MAX),
+                        NationalityList NVARCHAR(MAX),
+                        VesselInfo NVARCHAR(MAX),
+                        DataInfo NVARCHAR(50),
+                        HashCheck NVARCHAR(64)
+                    );", connection))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+
+            // Bulk copy
+            using (SqlBulkCopy bulk = new SqlBulkCopy(connection))
+            {
+                bulk.DestinationTableName = "#TempOfacUpdate";
+                bulk.BatchSize = 5000;
+                bulk.BulkCopyTimeout = 600;
+
+                bulk.WriteToServer(dt);
+            }
+
+           using (SqlCommand cmd = new SqlCommand(@"
+                    UPDATE O
+                    SET
+                        O.FirstName        = T.FirstName,
+                        O.LastName         = T.LastName,
+                        O.Title            = T.Title,
+                        O.SdnType          = T.SdnType,
+                        O.EntityType       = T.EntityType,
+                        O.Remarks          = T.Remarks,
+                        O.ProgramList      = T.ProgramList,
+                        O.AkaList          = T.AkaList,
+                        O.AddressList      = T.AddressList,
+                        O.IdList           = T.IdList,
+                        O.DateOfBirthList  = T.DateOfBirthList,
+                        O.PlaceOfBirthList = T.PlaceOfBirthList,
+                        O.NationalityList  = T.NationalityList,
+                        O.VesselInfo       = T.VesselInfo,
+                        O.DataInfo         = T.DataInfo,
+                        O.HashCheck        = T.HashCheck
+                    FROM OfacSanction O
+                    INNER JOIN #TempOfacUpdate T
+                        ON O.Uid = T.Uid
+                    WHERE O.DataInfo='SDN';", connection))
+                        {
+                            cmd.ExecuteNonQuery();
+                        }
+
+            using (SqlCommand cmd = new SqlCommand("DROP TABLE #TempOfacUpdate;", connection))
+            {
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

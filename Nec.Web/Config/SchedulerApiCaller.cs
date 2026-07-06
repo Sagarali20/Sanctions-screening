@@ -57,7 +57,6 @@ namespace Nec.Web.Config
 
             _logger.LogInformation("Midnight API Caller stopped.");
         }
-
         private async Task CallApiAsync()
         {
             //var client = _httpClientFactory.CreateClient();

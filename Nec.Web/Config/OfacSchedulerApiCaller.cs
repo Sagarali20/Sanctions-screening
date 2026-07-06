@@ -4,6 +4,8 @@ using Nec.Web.Interfaces;
 using Nec.Web.Models;
 using Nec.Web.Utils;
 using System.Net.Http;
+using System.Text.Json;
+using System.Xml.Serialization;
 
 namespace Nec.Web.Config
 {
@@ -13,6 +15,8 @@ namespace Nec.Web.Config
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         NecAppConfigForAcheduler _appConfig;
+        private readonly IOfacService _ofacService;
+
         public OfacSchedulerApiCaller(ILogger<OfacSchedulerApiCaller> logger, IHttpClientFactory httpClientFactory, IServiceScopeFactory serviceScopeFactory, NecAppConfigForAcheduler necAppConfig)
         {
             _logger = logger;
@@ -23,7 +27,7 @@ namespace Nec.Web.Config
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Midnight API Caller started.");
+            _logger.LogInformation("Midnight API Caller started for Ofac.");
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -48,7 +52,7 @@ namespace Nec.Web.Config
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // wait before retrying
                 }
             }
-            _logger.LogInformation("Midnight API Caller stopped.");
+            _logger.LogInformation("Midnight API Caller stopped for Ofac");
         }
         private async Task CallApiAsync()
         {
@@ -56,99 +60,64 @@ namespace Nec.Web.Config
             _logger.LogInformation("xxxxxxxxxxxxxxxxxxx--OFAC--xxxxxxxxxxxxxxxxxxxxxx");
 
             using var scope = _serviceScopeFactory.CreateScope();
-            var sanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
+            var OfacService = scope.ServiceProvider.GetRequiredService<IOfacService>();
+            var SanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
 
             List<SanctionEntity> entities = new();
 
             try
             {
-                using var client = new HttpClient
+
+
+                string url = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML";
+
+
+                using (HttpClient client = new HttpClient()
                 {
-                    Timeout = TimeSpan.FromMinutes(40)
-                };
-
-                string? FileVersion = await sanctionService.GetFileVersion();
-
-                var request = new HttpRequestMessage(HttpMethod.Get, _appConfig.DilisenseUrl + FileVersion);
-                request.Headers.Add("x-api-key", _appConfig.APIKey);
-                var response = await client.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
+                    Timeout = TimeSpan.FromMinutes(30)
+                })
                 {
+                    // Add a User-Agent header to avoid 403 (many servers block requests without one)
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; MyApp/1.0)");
 
-                    string Version = string.Empty;
+                    Console.WriteLine("Downloading OFAC SDN XML file...");
 
-                    foreach (var header in response.Headers)
+                    // Use GET, not POST
+                    using (HttpResponseMessage response = await client.GetAsync(url))
                     {
-                        if (header.Key == "File-Version")
+                        response.EnsureSuccessStatusCode(); // throws if not 2xx
+                        SdnList sdnList = new SdnList();
+
+
+                        // Get the stream of data
+                        using (Stream contentStream = await response.Content.ReadAsStreamAsync())
                         {
-                            Version = string.Join(", ", header.Value);
+
+                            XmlSerializer serializer = new XmlSerializer(typeof(SdnList));
+                            sdnList = (SdnList)serializer.Deserialize(contentStream);
+
+                            int id = OfacService.UpdateOfacSanctionSDN(sdnList.SdnEntries);
+
+                            // Prepare filename and path
+                            string fileName = $"Ofac_SDN_consolidated_data_file_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xml";
                         }
-                    }
-
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    string[] jsonArray = responseBody.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                    int TotalPrivious = 0, TotalNew = 0, TotalUpdate = 0, TotalDelete = 0;
-
-                    _logger.LogInformation($"Download successfully done version: {Version} .Total records in the file: {jsonArray.Length}");
-
-                    AMLSourceLog aMLSourceLog = new AMLSourceLog();
-                    aMLSourceLog.Total = jsonArray.Count();
-                    aMLSourceLog.FileVersion = Version;
-                    aMLSourceLog.FileName = $"Dilisense_consolidated_data_file_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-                    aMLSourceLog.SourceName = "Dilisense";
-                    aMLSourceLog.SourceLink = _appConfig.DilisenseUrl + FileVersion;
-                    aMLSourceLog.SourceCountry = "Zurich and Luxembourg";
-
-                    int RowId = sanctionService.CreateAMLLog(aMLSourceLog);
-                    aMLSourceLog.TotalPrivious = await sanctionService.TotalDataCount();
-                    int Totaldownload = 0;
-
-
-                    foreach (var line in jsonArray)
-                    {
-                        if (string.IsNullOrWhiteSpace(line)) continue;
-
-                        Totaldownload++;
-                        ConsolidatedDelta entity = JsonSerializer.Deserialize<ConsolidatedDelta>(line)!;
-                        if (entity.type == "UPDATE")
-                        {
-                            TotalUpdate++;
-                            bool Res = sanctionService.UpdateSanction(entity.record);
-                        }
-                        else if (entity.type == "ADD")
-                        {
-                            TotalNew++;
-                            entity.record.VersionId = RowId;
-                            bool Res = sanctionService.CreateSanctionNew(entity.record);
-                        }
-                        else if (entity.type == "DELETE")
-                        {
-                            TotalDelete++;
-                            bool Res = sanctionService.DeleteSanction(entity.record.id);
-                        }
+                        AMLSourceLog aMLSourceLog = new AMLSourceLog();
+                        aMLSourceLog.Total = sdnList.SdnEntries.Count();
+                        aMLSourceLog.FileVersion = "";
+                        aMLSourceLog.FileName = $"Ofac_data_file_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+                        aMLSourceLog.SourceName = "OFAC-SDN";
+                        aMLSourceLog.SourceLink = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML";
+                        aMLSourceLog.SourceCountry = "U.S.";
+                        int RowId = SanctionService.CreateAMLLog(aMLSourceLog);
 
                     }
-
-                    aMLSourceLog.TotalNew = TotalNew;
-                    aMLSourceLog.TotalUpdate = TotalUpdate;
-                    aMLSourceLog.TotalDelete = TotalDelete;
-                    aMLSourceLog.TotalData = Totaldownload;
-
-
-                    var res = sanctionService.CreateAMLDataStatusLog(aMLSourceLog);
-
                 }
-                else
-                {
-                    Console.WriteLine($"Request failed with status code: {response.StatusCode} ({(int)response.StatusCode})");
 
-                }
 
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ann error occurs in catch section when updating data: " + ex.ToString());
+                _logger.LogWarning("Ann error occurs in catch Ofac when updating data: " + ex.StackTrace.ToString());
             }
 
         }

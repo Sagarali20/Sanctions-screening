@@ -43,8 +43,8 @@ builder.Services.AddScoped<IUKService, UKService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddHostedService<SchedulerApiCaller>();
-builder.Services.AddHostedService<SchedulerApiCaller>();
-builder.Services.AddHostedService<SchedulerApiCaller>();
+builder.Services.AddHostedService<OfacSchedulerApiCaller>();
+builder.Services.AddHostedService<UKSchedulerApiCaller>();
 
 
 //BkashConfig.Initialize(builder.Configuration);

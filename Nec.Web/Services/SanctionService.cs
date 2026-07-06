@@ -98,7 +98,7 @@ namespace Nec.Web.Services
                         cmd.ExecuteNonQuery(); 
                         resultStatus = (int)cmd.Parameters["@ResultStatus"].Value;
                         string? errorMessage = cmd.Parameters["@ErrorMessage"].Value?.ToString();
-
+                            
                         transaction.Commit();
                         if (transaction.Connection != null)
                         {
