@@ -24,7 +24,7 @@ namespace Nec.Web.Config
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Midnight API Caller started for Ofac.");
+            _logger.LogInformation("Midnight API Caller started for UKSanction.");
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -33,7 +33,7 @@ namespace Nec.Web.Config
                     var nextMidnight = now.Date.AddDays(1);
                     var delay = nextMidnight - now;
 
-                    await Task.Delay(5000, stoppingToken);
+                    await Task.Delay(9000, stoppingToken);
 
                     await CallApiAsync();
 
@@ -49,15 +49,15 @@ namespace Nec.Web.Config
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // wait before retrying
                 }
             }
-            _logger.LogInformation("Midnight API Caller stopped for Ofac");
+            _logger.LogInformation("Midnight API Caller stopped for UKSanction");
         }
         private async Task CallApiAsync()
         {
             //var client = _httpClientFactory.CreateClient();
-            _logger.LogInformation("xxxxxxxxxxxxxxxxxxx--OFAC--xxxxxxxxxxxxxxxxxxxxxx");
+            _logger.LogInformation("xxxxxxxxxxxxxxxxxxx--UKSanction--xxxxxxxxxxxxxxxxxxxxxx");
 
             using var scope = _serviceScopeFactory.CreateScope();
-            var OfacService = scope.ServiceProvider.GetRequiredService<IOfacService>();
+            var UKService = scope.ServiceProvider.GetRequiredService<IUKService>();
             var SanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
 
             List<SanctionEntity> entities = new();
@@ -81,7 +81,8 @@ namespace Nec.Web.Config
 
                 int totalRecords = data.DesignationList.Count;
 
-                //_UKService.CreateUKSanctionBulk(data);
+
+                UKService.CreateUKSanctionBulk(data);
 
 
             }

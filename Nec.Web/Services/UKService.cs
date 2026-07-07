@@ -471,6 +471,7 @@ namespace Nec.Web.Services
             dt.Columns.Add("OtherInformation", typeof(string));
             dt.Columns.Add("UKStatementofReasons", typeof(string));
             dt.Columns.Add("IndividualDetails", typeof(string));
+            dt.Columns.Add("HashCheck", typeof(string));
 
             foreach (var model in list)
             {
@@ -489,7 +490,8 @@ namespace Nec.Web.Services
                     JsonSerializer.Serialize(model.SanctionsImposedIndicators),
                     model.OtherInformation,
                     model.UKStatementofReasons,
-                    JsonSerializer.Serialize(model.IndividualDetails)
+                    JsonSerializer.Serialize(model.IndividualDetails),
+                    model.HashCheck
                 );
             }
 
@@ -507,8 +509,8 @@ namespace Nec.Web.Services
             using (SqlCommand cmd = new SqlCommand(@"
                     CREATE TABLE #TempUKSanction
                     (
-                        UniqueID INT,
-                        LastUpdated DATETIME,
+                        UniqueID nvarchar(50),
+                        LastUpdated nvarchar(50),
                         DateDesignated NVARCHAR(MAX),
                         UNReferenceNumber NVARCHAR(MAX),
                         Names NVARCHAR(MAX),
@@ -521,13 +523,13 @@ namespace Nec.Web.Services
                         SanctionsImposedIndicators NVARCHAR(MAX),
                         OtherInformation NVARCHAR(MAX),
                         UKStatementofReasons NVARCHAR(MAX),
-                        IndividualDetails NVARCHAR(MAX)
+                        IndividualDetails NVARCHAR(MAX),
+                        HashCheck nvarchar(100)
                     )", con))
                             {
                                 cmd.ExecuteNonQuery();
                             }
 
-            // Bulk copy
             using (SqlBulkCopy bulk = new SqlBulkCopy(con))
             {
                 bulk.DestinationTableName = "#TempUKSanction";
@@ -555,6 +557,7 @@ namespace Nec.Web.Services
                         , T.OtherInformation            = S.OtherInformation
                         , T.UKStatementofReasons        = S.UKStatementofReasons
                         , T.IndividualDetails           = S.IndividualDetails
+                        , T.HashCheck                   = S.HashCheck
                     FROM UKSanction T
                     INNER JOIN #TempUKSanction S
                         ON T.UniqueID = S.UniqueID;", con))
