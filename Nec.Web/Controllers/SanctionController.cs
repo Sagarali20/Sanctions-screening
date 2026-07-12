@@ -225,7 +225,7 @@ namespace Nec.Web.Controllers
                         if(entity.type== "UPDATE")
                         {
                             TotalUpdate++;
-                            bool Res = _sanctionService.UpdateSanction(entity.record);
+                         //   bool Res = _sanctionService.UpdateSanction(entity.record);
                         }
                         else if(entity.type== "ADD")
                         {

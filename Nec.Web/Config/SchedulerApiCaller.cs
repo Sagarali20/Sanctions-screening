@@ -28,7 +28,7 @@ namespace Nec.Web.Config
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Midnight API Caller started.");
+            _logger.LogInformation("##Midnight API Caller started for Dilisense.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -42,11 +42,11 @@ namespace Nec.Web.Config
 
                     await CallApiAsync();
 
-                    _logger.LogInformation("API called at: {time}", DateTimeOffset.Now);
+                    _logger.LogInformation("##API called at: {time}", DateTimeOffset.Now);
                 }
                 catch (TaskCanceledException)
-                { 
-                    _logger.LogInformation("Midnight API caller cancelled.");
+                {   
+                    _logger.LogInformation("##Midnight API caller cancelled.");
                 }
                 catch (Exception ex)
                 {
@@ -54,13 +54,12 @@ namespace Nec.Web.Config
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // wait before retrying
                 }
             }
-
-            _logger.LogInformation("Midnight API Caller stopped.");
+            _logger.LogInformation("##Midnight API Caller stopped.");
         }
         private async Task CallApiAsync()
         {
             //var client = _httpClientFactory.CreateClient();
-            _logger.LogInformation("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+            _logger.LogInformation("xxxxxxxxxxxxxxxxxxx-Start-Download-Dilisense-xxxxxxxxxxxxxxxxxxxxxxx");
 
             using var scope = _serviceScopeFactory.CreateScope();
             var sanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
@@ -97,7 +96,7 @@ namespace Nec.Web.Config
                     string[] jsonArray = responseBody.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     int TotalPrivious = 0, TotalNew = 0, TotalUpdate = 0, TotalDelete = 0;
                      
-                    _logger.LogInformation($"Download successfully done version: {Version} .Total records in the file: {jsonArray.Length}");
+                    _logger.LogInformation($"###Download successfully done Dilisense version: {Version} .Total records in the file: {jsonArray.Length}");
 
                     AMLSourceLog aMLSourceLog = new AMLSourceLog();
                     aMLSourceLog.Total = jsonArray.Count();
@@ -110,7 +109,8 @@ namespace Nec.Web.Config
                     int RowId = sanctionService.CreateAMLLog(aMLSourceLog);
                     aMLSourceLog.TotalPrivious = await sanctionService.TotalDataCount();
                     int Totaldownload = 0;
-
+                    List<SanctionEntity> UpdateConsolidatedDelta = new List<SanctionEntity>();  
+                    List<SanctionEntity> CreateConsolidatedDelta = new List<SanctionEntity>();  
 
                     foreach (var line in jsonArray)
                     {
@@ -121,13 +121,18 @@ namespace Nec.Web.Config
                         if (entity.type == "UPDATE")
                         {
                             TotalUpdate++;
-                            bool Res = sanctionService.UpdateSanction(entity.record);
+
+                            //bool Res = sanctionService.UpdateSanction(entity.record);
+
+                            UpdateConsolidatedDelta.Add(entity.record);
                         }
                         else if (entity.type == "ADD")
                         {  
                             TotalNew++;
                             entity.record.VersionId = RowId;
                             bool Res = sanctionService.CreateSanctionNew(entity.record);
+
+                            CreateConsolidatedDelta.Add(entity.record);
                         }
                         else if (entity.type == "DELETE")
                         {
@@ -136,6 +141,12 @@ namespace Nec.Web.Config
                         }
 
                     }
+
+                    bool Res2 = sanctionService.UpdateSanction(UpdateConsolidatedDelta);
+
+                    _logger.LogInformation($"###Download successfully done and save  successfully:");
+
+
 
                     aMLSourceLog.TotalNew = TotalNew;
                     aMLSourceLog.TotalUpdate = TotalUpdate;
@@ -147,7 +158,7 @@ namespace Nec.Web.Config
 
                 }
                 else
-                {
+                { 
                     Console.WriteLine($"Request failed with status code: {response.StatusCode} ({(int)response.StatusCode})");
 
                 }
@@ -155,7 +166,7 @@ namespace Nec.Web.Config
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Ann error occurs in catch section when updating data: "+ex.ToString());               
+                _logger.LogError("###Ann error occurs in catch section when updating data: " + ex.Message.ToString()+" "+ex.StackTrace?.ToString());               
             }
 
         }

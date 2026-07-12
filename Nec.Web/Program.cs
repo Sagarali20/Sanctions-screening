@@ -131,7 +131,6 @@ builder.Services.AddControllers()
     });
 
 var app = builder.Build();
-
 // Configure Middleware
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -144,10 +143,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.Run();
-
-
 
 //app.MapGet("/", async context =>
 //{
@@ -173,5 +168,31 @@ app.MapGet("/", () => Results.Content($@"
         </body>
     </html>", "text/html"));
 
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    Log.Information("Application Started");
+});
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    Log.Warning("Application Stopping");
+});
+
+app.Lifetime.ApplicationStopped.Register(() =>
+{
+    Log.Warning("Application Stopped");
+});
+
+AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+{
+    Log.Fatal(e.ExceptionObject as Exception, "Unhandled Exception");
+};
+
+TaskScheduler.UnobservedTaskException += (sender, e) =>
+{
+    Log.Fatal(e.Exception, "Unobserved Task Exception");
+    e.SetObserved();
+};
 
 app.Run();

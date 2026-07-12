@@ -30,10 +30,10 @@ namespace Nec.Web.Config
                 try
                 {
                     var now = DateTime.Now;
-                    var nextMidnight = now.Date.AddDays(1);
+                    var nextMidnight = now.Date.AddDays(1).AddMinutes(50);
                     var delay = nextMidnight - now;
 
-                    await Task.Delay(9000, stoppingToken);
+                    await Task.Delay(delay, stoppingToken);
 
                     await CallApiAsync();
 

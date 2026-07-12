@@ -268,99 +268,128 @@ namespace Nec.Web.Services
             }
 
         }
-        public bool UpdateSanction(SanctionEntity model)
+        public bool UpdateSanction(List<SanctionEntity> model)
         {
-            int resultStatus;
-            string storedProcedureName = "UpdateAMLSource";
-            using (SqlConnection con = _dbConnection.CreateConnectionsql())
+            if (model.Count == 0)
+                return false;
+
+            using (SqlConnection connection = _dbConnection.CreateConnectionsql())
             {
-                con.Open();
-                IDbTransaction transaction = con.BeginTransaction(System.Data.IsolationLevel.ReadCommitted);
-                try
+
+                connection.Open();
+                DataTable dt = CreateAMLUpdateDataTable(model);
+
+
+                using (SqlCommand cmd = new SqlCommand(@"CREATE TABLE #TempAML
+                                                    (
+                                                        AmlId nvarchar(50),
+                                                        SourceId NVARCHAR(100),
+                                                        SourceType NVARCHAR(100),
+                                                        PepType NVARCHAR(100),
+                                                        EntityType NVARCHAR(100),
+                                                        Gender NVARCHAR(25),
+                                                        Name NVARCHAR(MAX),
+                                                        TlName NVARCHAR(MAX),
+                                                        Alias_names NVARCHAR(MAX),
+                                                        LastNames NVARCHAR(150),
+                                                        GivenNames NVARCHAR(MAX),
+                                                        AliasGivenNames NVARCHAR(MAX),
+                                                        Spouse NVARCHAR(MAX),
+                                                        Parents NVARCHAR(MAX),
+                                                        Children NVARCHAR(200),
+                                                        Siblings NVARCHAR(200),
+                                                        DateOfBirth NVARCHAR(200),
+                                                        PlaceOfBirth NVARCHAR(MAX),
+                                                        DateOfBirthRemarks NVARCHAR(MAX),
+                                                        PlaceOfBirthRemarks NVARCHAR(MAX),
+                                                        Address NVARCHAR(MAX),
+                                                        AddressRemarks NVARCHAR(MAX),
+                                                        SanctionDetails NVARCHAR(MAX),
+                                                        Description NVARCHAR(MAX),
+                                                        Occupations NVARCHAR(MAX),
+                                                        Positions NVARCHAR(MAX),
+                                                        PoliticalParties NVARCHAR(MAX),
+                                                        Links NVARCHAR(MAX),
+                                                        Titles NVARCHAR(200),
+                                                        ListDate DATETIME,
+                                                        Functions NVARCHAR(MAX),
+                                                        Citizenship NVARCHAR(MAX),
+                                                        CitizenshipRemarks NVARCHAR(MAX),
+                                                        OtherInformation NVARCHAR(MAX),
+                                                        CompanyNumber NVARCHAR(MAX),
+                                                        NameRemarks NVARCHAR(MAX),
+                                                        Jurisdiction NVARCHAR(MAX),
+                                                        SourceCountry NVARCHAR(200)
+                                                    );", connection))
+                                                {
+                                                    cmd.ExecuteNonQuery();
+                                                }
+
+                // Bulk copy
+                using (SqlBulkCopy bulk = new SqlBulkCopy(connection))
                 {
-                    using (SqlCommand cmd = new SqlCommand("", con, (SqlTransaction)transaction))
-                    {
-                        // Specify that the SqlCommand is a stored procedure
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.CommandText = storedProcedureName;
-                        cmd.Parameters.AddWithValue("@AmlId", model.id);
-                        cmd.Parameters.AddWithValue("@SourceId", model.source_id);
-                        cmd.Parameters.AddWithValue("@SourceType", model.source_type);
-                        cmd.Parameters.AddWithValue("@PepType", model.pep_type);
-                        cmd.Parameters.AddWithValue("@EntityType", model.entity_type);
-                        cmd.Parameters.AddWithValue("@Gender", model.gender);
-                        cmd.Parameters.AddWithValue("@Name", model.name);
-                        cmd.Parameters.AddWithValue("@TlName", model.tl_name);
-                        cmd.Parameters.AddWithValue("@Alias_names", JsonSerializer.Serialize(model.alias_names));
-                        cmd.Parameters.AddWithValue("@LastNames", JsonSerializer.Serialize(model.last_names));
-                        cmd.Parameters.AddWithValue("@GivenNames", JsonSerializer.Serialize(model.given_names));
-                        cmd.Parameters.AddWithValue("@AliasGivenNames", JsonSerializer.Serialize(model.alias_given_names));
-                        cmd.Parameters.AddWithValue("@Spouse", JsonSerializer.Serialize(model.spouse));
-                        cmd.Parameters.AddWithValue("@Parents", JsonSerializer.Serialize(model.parents));
-                        cmd.Parameters.AddWithValue("@Children", JsonSerializer.Serialize(model.children));
-                        cmd.Parameters.AddWithValue("@Siblings", JsonSerializer.Serialize(model.siblings));
-                        cmd.Parameters.AddWithValue("@DateOfBirth", JsonSerializer.Serialize(model.date_of_birth));
-                        cmd.Parameters.AddWithValue("@PlaceOfBirth", JsonSerializer.Serialize(model.place_of_birth));
-                        cmd.Parameters.AddWithValue("@DateOfBirthRemarks", JsonSerializer.Serialize(model.date_of_birth_remarks));
-                        cmd.Parameters.AddWithValue("@PlaceOfBirthRemarks", JsonSerializer.Serialize(model.place_of_birth_remarks));
-                        cmd.Parameters.AddWithValue("@Address", JsonSerializer.Serialize(model.address));
-                        cmd.Parameters.AddWithValue("@AddressRemarks", JsonSerializer.Serialize(model.address_remarks));
-                        cmd.Parameters.AddWithValue("@SanctionDetails", JsonSerializer.Serialize(model.sanction_details));
-                        cmd.Parameters.AddWithValue("@Description", JsonSerializer.Serialize(model.description));
-                        cmd.Parameters.AddWithValue("@Occupations", JsonSerializer.Serialize(model.occupations));
-                        cmd.Parameters.AddWithValue("@Positions", JsonSerializer.Serialize(model.positions));
-                        cmd.Parameters.AddWithValue("@PoliticalParties", JsonSerializer.Serialize(model.political_parties));
-                        cmd.Parameters.AddWithValue("@Links", JsonSerializer.Serialize(model.links));
-                        cmd.Parameters.AddWithValue("@Titles", JsonSerializer.Serialize(model.titles));
-                        cmd.Parameters.AddWithValue("@ListDate", model.list_date);
-                        cmd.Parameters.AddWithValue("@Functions", JsonSerializer.Serialize(model.functions));
-                        cmd.Parameters.AddWithValue("@Citizenship", JsonSerializer.Serialize(model.citizenship));
-                        cmd.Parameters.AddWithValue("@CitizenshipRemarks", JsonSerializer.Serialize(model.citizenship_remarks));
-                        cmd.Parameters.AddWithValue("@OtherInformation", JsonSerializer.Serialize(model.other_information));
-                        cmd.Parameters.AddWithValue("@CompanyNumber", JsonSerializer.Serialize(model.company_number));
-                        cmd.Parameters.AddWithValue("@NameRemarks", JsonSerializer.Serialize(model.name_remarks));
-                        cmd.Parameters.AddWithValue("@Jurisdiction", JsonSerializer.Serialize(model.jurisdiction));
-                        cmd.Parameters.AddWithValue("@SourceCountry", model.source_country);
-                        SqlParameter outParameter = new SqlParameter("@ResultStatus", SqlDbType.Int)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        cmd.Parameters.Add(outParameter);
-                        SqlParameter outErrorParam = new SqlParameter("@ErrorMessage", SqlDbType.NVarChar, -1)
-                        {
-                            Direction = ParameterDirection.Output
-                        };
-                        cmd.Parameters.Add(outErrorParam);
-                        cmd.ExecuteNonQuery();
-                        resultStatus = (int)cmd.Parameters["@ResultStatus"].Value;
-                        string? errorMessage = cmd.Parameters["@ErrorMessage"].Value?.ToString();
+                    bulk.DestinationTableName = "#TempAML";
 
-                        transaction.Commit();
-                        if (transaction.Connection != null)
-                        {
-                            transaction.Connection.Close();
-                        }
+                    bulk.BatchSize = 5000;
+                    bulk.BulkCopyTimeout = 600;
 
-                        if (resultStatus == 1)
-                        {
-
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
-                    }
+                    bulk.WriteToServer(dt);
                 }
-                catch (Exception ex)
+
+                using (SqlCommand cmd = new SqlCommand(@"
+                    UPDATE A
+                        SET
+                              A.SourceId = T.SourceId
+                            , A.SourceType = T.SourceType
+                            , A.PepType = T.PepType
+                            , A.EntityType = T.EntityType
+                            , A.Gender = T.Gender
+                            , A.Name = T.Name
+                            , A.TlName = T.TlName
+                            , A.Alias_names = T.Alias_names
+                            , A.LastNames = T.LastNames
+                            , A.GivenNames = T.GivenNames
+                            , A.AliasGivenNames = T.AliasGivenNames
+                            , A.Spouse = T.Spouse
+                            , A.Parents = T.Parents
+                            , A.Children = T.Children
+                            , A.Siblings = T.Siblings
+                            , A.DateOfBirth = T.DateOfBirth
+                            , A.PlaceOfBirth = T.PlaceOfBirth
+                            , A.DateOfBirthRemarks = T.DateOfBirthRemarks
+                            , A.PlaceOfBirthRemarks = T.PlaceOfBirthRemarks
+                            , A.Address = T.Address
+                            , A.AddressRemarks = T.AddressRemarks
+                            , A.SanctionDetails = T.SanctionDetails
+                            , A.Description = T.Description
+                            , A.Occupations = T.Occupations
+                            , A.Positions = T.Positions
+                            , A.PoliticalParties = T.PoliticalParties
+                            , A.Links = T.Links
+                            , A.Titles = T.Titles
+                            , A.ListDate = T.ListDate
+                            , A.Functions = T.Functions
+                            , A.Citizenship = T.Citizenship
+                            , A.CitizenshipRemarks = T.CitizenshipRemarks
+                            , A.OtherInformation = T.OtherInformation
+                            , A.CompanyNumber = T.CompanyNumber
+                            , A.NameRemarks = T.NameRemarks
+                            , A.Jurisdiction = T.Jurisdiction
+                            , A.SourceCountry = T.SourceCountry
+                        FROM AMLSource A
+                        INNER JOIN #TempAML T
+                        ON A.AmlId = T.AmlId ;", connection))
                 {
-                    _logger.LogError($"Getting error from UpdateAMLSource id: {model.id}" + ex.Message);
-
-                    transaction.Rollback();
-                    return false;
+                    cmd.ExecuteNonQuery();
                 }
+
+                using (SqlCommand cmd = new SqlCommand("DROP TABLE #TempAML;", connection))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+
             }
-
+            return false;
         }
         public bool DeleteSanction(string id)
         {
@@ -1278,7 +1307,7 @@ namespace Nec.Web.Services
 
         public async Task<string?> GetFileVersion()
         {
-            string Query = "select Top 1 FileVersion from AMLSourceLogs order by Id desc";
+            string Query = "select Top 1 FileVersion from AMLSourceLogs where SourceName='Dilisense' order by Id desc";
             string? Version = string.Empty;
             try
             {
@@ -1589,5 +1618,97 @@ namespace Nec.Web.Services
                     .Where(t => !StopWords.Contains(t))
             );
         }
+
+        private DataTable CreateAMLUpdateDataTable(List<SanctionEntity> models)
+        {
+
+            DataTable dt = new DataTable();
+            dt.Columns.Add("AmlId", typeof(string));
+            dt.Columns.Add("SourceId");
+            dt.Columns.Add("SourceType");
+            dt.Columns.Add("PepType");
+            dt.Columns.Add("EntityType");
+            dt.Columns.Add("Gender");
+            dt.Columns.Add("Name");
+            dt.Columns.Add("TlName");
+            dt.Columns.Add("Alias_names");
+            dt.Columns.Add("LastNames");
+            dt.Columns.Add("GivenNames");
+            dt.Columns.Add("AliasGivenNames");
+            dt.Columns.Add("Spouse");
+            dt.Columns.Add("Parents");
+            dt.Columns.Add("Children");
+            dt.Columns.Add("Siblings");
+            dt.Columns.Add("DateOfBirth");
+            dt.Columns.Add("PlaceOfBirth");
+            dt.Columns.Add("DateOfBirthRemarks");
+            dt.Columns.Add("PlaceOfBirthRemarks");
+            dt.Columns.Add("Address");
+            dt.Columns.Add("AddressRemarks");
+            dt.Columns.Add("SanctionDetails");
+            dt.Columns.Add("Description");
+            dt.Columns.Add("Occupations");
+            dt.Columns.Add("Positions");
+            dt.Columns.Add("PoliticalParties");
+            dt.Columns.Add("Links");
+            dt.Columns.Add("Titles");
+            dt.Columns.Add("ListDate", typeof(DateTime));
+            dt.Columns.Add("Functions");
+            dt.Columns.Add("Citizenship");
+            dt.Columns.Add("CitizenshipRemarks");
+            dt.Columns.Add("OtherInformation");
+            dt.Columns.Add("CompanyNumber");
+            dt.Columns.Add("NameRemarks");
+            dt.Columns.Add("Jurisdiction");
+            dt.Columns.Add("SourceCountry");
+
+            foreach (var model in models)
+            {
+                dt.Rows.Add(
+                    model.id,
+                    model.source_id,
+                    model.source_type,
+                    model.pep_type,
+                    model.entity_type,
+                    model.gender,
+                    model.name,
+                    model.tl_name,
+                    JsonSerializer.Serialize(model.alias_names),
+                    JsonSerializer.Serialize(model.last_names),
+                    JsonSerializer.Serialize(model.given_names),
+                    JsonSerializer.Serialize(model.alias_given_names),
+                    JsonSerializer.Serialize(model.spouse),
+                    JsonSerializer.Serialize(model.parents),
+                    JsonSerializer.Serialize(model.children),
+                    JsonSerializer.Serialize(model.siblings),
+                    JsonSerializer.Serialize(model.date_of_birth),
+                    JsonSerializer.Serialize(model.place_of_birth),
+                    JsonSerializer.Serialize(model.date_of_birth_remarks),
+                    JsonSerializer.Serialize(model.place_of_birth_remarks),
+                    JsonSerializer.Serialize(model.address),
+                    JsonSerializer.Serialize(model.address_remarks),
+                    JsonSerializer.Serialize(model.sanction_details),
+                    JsonSerializer.Serialize(model.description),
+                    JsonSerializer.Serialize(model.occupations),
+                    JsonSerializer.Serialize(model.positions),
+                    JsonSerializer.Serialize(model.political_parties),
+                    JsonSerializer.Serialize(model.links),
+                    JsonSerializer.Serialize(model.titles),
+                    model.list_date ?? (object)DBNull.Value,
+                    JsonSerializer.Serialize(model.functions),
+                    JsonSerializer.Serialize(model.citizenship),
+                    JsonSerializer.Serialize(model.citizenship_remarks),
+                    JsonSerializer.Serialize(model.other_information),
+                    JsonSerializer.Serialize(model.company_number),
+                    JsonSerializer.Serialize(model.name_remarks),
+                    JsonSerializer.Serialize(model.jurisdiction),
+                    model.source_country
+                );
+            }
+
+            return dt;
+        }
+
+
     }
 }

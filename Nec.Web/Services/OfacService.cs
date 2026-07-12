@@ -269,8 +269,6 @@ namespace Nec.Web.Services
 
             AMLSourceLog aMLSourceLog = new AMLSourceLog();
 
-
-
             try
             {
                 using (var connection = _dbConnection.CreateConnectionsql())
@@ -305,7 +303,7 @@ namespace Nec.Web.Services
                     foreach (var model in lst)
                     {
                         string Check = HashHelper.ComputeSha256Hash(JsonSerializer.Serialize(model));
-
+                        model.HashCheck = Check;    
                         model.DataInfoType = "SDN";
                         // ********** CHECK IF EXISTS **********
                         //string HashCheck = "";
@@ -875,8 +873,6 @@ namespace Nec.Web.Services
 
             foreach (var model in models)
             {
-                string hash = HashHelper.ComputeSha256Hash(
-                    JsonSerializer.Serialize(model));
 
                 dt.Rows.Add(
                     model.Uid,
@@ -895,7 +891,7 @@ namespace Nec.Web.Services
                     JsonSerializer.Serialize(model.NationalityList),
                     JsonSerializer.Serialize(model.VesselInfo),
                     "SDN",
-                    hash,
+                    model.HashCheck,
                     DateTime.Now,
                     model.SearchText,
                     "Ofac-SDN"
@@ -946,7 +942,7 @@ namespace Nec.Web.Services
                     JsonSerializer.Serialize(model.NationalityList),
                     JsonSerializer.Serialize(model.VesselInfo),
                     "SDN",
-                    HashHelper.ComputeSha256Hash(JsonSerializer.Serialize(model))
+                    model.HashCheck 
                 );
             }
 
@@ -980,7 +976,7 @@ namespace Nec.Web.Services
                         NationalityList NVARCHAR(MAX),
                         VesselInfo NVARCHAR(MAX),
                         DataInfo NVARCHAR(50),
-                        HashCheck NVARCHAR(64)
+                        HashCheck NVARCHAR(70)
                     );", connection))
                         {
                             cmd.ExecuteNonQuery();

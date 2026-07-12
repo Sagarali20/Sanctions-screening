@@ -33,7 +33,7 @@ namespace Nec.Web.Config
                 try
                 {
                     var now = DateTime.Now;
-                    var nextMidnight = now.Date.AddDays(1);
+                    var nextMidnight = now.Date.AddDays(1).AddMinutes(40);
                     var delay = nextMidnight - now;
 
                     await Task.Delay(delay, stoppingToken);
@@ -67,7 +67,6 @@ namespace Nec.Web.Config
 
             try
             {
-
 
                 string url = "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN.XML";
 

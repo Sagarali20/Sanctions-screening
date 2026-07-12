@@ -8,7 +8,7 @@ namespace Nec.Web.Interfaces
     {
         bool CreateSanction(SanctionEntity model);
         bool CreateSanctionNew(SanctionEntity model);
-        bool UpdateSanction(SanctionEntity model);
+        bool UpdateSanction(List<SanctionEntity> model);
         bool DeleteSanction(string id);
         Task<List<SanctionEntity>> GetExcelSanctionDetailsBySearch(string name, string entitytype, string address,string city,string state,string country,string dateofbirth, string guid);
         Task<List<SearchResult?>> GetSearchSanction(AMLFilter model);
