@@ -43,8 +43,9 @@ builder.Services.AddScoped<IUKService, UKService>();
 builder.Services.AddScoped<ICommonService, CommonService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddHostedService<SchedulerApiCaller>();
-builder.Services.AddHostedService<OfacSchedulerApiCaller>();
-builder.Services.AddHostedService<UKSchedulerApiCaller>();
+//builder.Services.AddHostedService<OfacSchedulerApiCaller>();
+//builder.Services.AddHostedService<UKSchedulerApiCaller>();
+
 
 
 //BkashConfig.Initialize(builder.Configuration);
@@ -155,6 +156,7 @@ app.MapControllers();
 //            </body>
 //        </html>");
 //});
+var _logger = app.Services.GetRequiredService<ILogger<Program>>();
 
 app.MapGet("/", () => Results.Content($@"
     <html>
@@ -171,27 +173,27 @@ app.MapGet("/", () => Results.Content($@"
 
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    Log.Information("Application Started");
+    _logger.LogInformation("### Application Started###");
 });
 
 app.Lifetime.ApplicationStopping.Register(() =>
 {
-    Log.Warning("Application Stopping");
+    _logger.LogWarning("Application Stopping");
 });
 
 app.Lifetime.ApplicationStopped.Register(() =>
 {
-    Log.Warning("Application Stopped");
+    _logger.LogWarning("Application Stopped");
 });
 
 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
 {
-    Log.Fatal(e.ExceptionObject as Exception, "Unhandled Exception");
+    _logger.LogError(e.ExceptionObject as Exception, "Unhandled Exception");
 };
 
 TaskScheduler.UnobservedTaskException += (sender, e) =>
 {
-    Log.Fatal(e.Exception, "Unobserved Task Exception");
+    _logger.LogError(e.Exception, "Unobserved Task Exception");
     e.SetObserved();
 };
 

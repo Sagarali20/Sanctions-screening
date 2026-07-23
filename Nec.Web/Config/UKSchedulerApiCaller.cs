@@ -45,7 +45,7 @@ namespace Nec.Web.Config
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error in API caller.");
+                    _logger.LogError(ex, "Error in API caller.");   
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); // wait before retrying
                 }
             }

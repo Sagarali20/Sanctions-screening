@@ -644,7 +644,7 @@ namespace Nec.Web.Services
             {
                 SubQuery += string.Format(@" AND ( SourceType='{0}')", model.SourceType);
             }
-            if((bool)model.IsRemitter)
+            if((bool)model.IsRemitter && !string.IsNullOrWhiteSpace(model.DateOfBirth))
             {
                 SubQuery = string.Empty;
                 SubQuery = string.Format(@" AND (DateOfBirth LIKE '%{0}%' )", model.DateOfBirth);
@@ -658,7 +658,7 @@ namespace Nec.Web.Services
                                     FROM AMLSource
                                     WHERE CONTAINS(([Name], Alias_names,GivenNames), @search) {1}
                                     union all
-                                    SELECT TOP (1000)
+                                    SELECT TOP (500)
                                         aml.AmlId,
                                         aml.SourceId,
                                         aml.SourceType,
@@ -956,7 +956,6 @@ namespace Nec.Web.Services
                         cmd.Parameters.AddWithValue("@DateAdded", DateTime.Now);
                         // Return the inserted ID
                         int result = cmd.ExecuteNonQuery();
-
 
                     }
                 }

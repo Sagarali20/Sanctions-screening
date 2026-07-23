@@ -8,7 +8,7 @@ namespace Nec.Web.Config
 
         private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
         {
-            "THE","OF","EL","LA","LE","DE","DA","AND","INC","LTD","LLC","COMPANY"
+            "THE","OF","EL","LA","LE","DE","DA","MD","AND","INC","LTD","LLC","COMPANY"
         };
 
         private static string[] TokenizeWithoutStopWords(string text)
@@ -19,30 +19,7 @@ namespace Nec.Web.Config
                 .ToArray();
         }
         // Levenshtein Distance Implementation
-        public static int LevenshteinDistance(string s, string t)
-        {
-            if (string.IsNullOrEmpty(s)) return t.Length;
-            if (string.IsNullOrEmpty(t)) return s.Length;
 
-            int n = s.Length;
-            int m = t.Length;
-            int[,] dp = new int[n + 1, m + 1];
-
-            for (int i = 0; i <= n; i++) dp[i, 0] = i;
-            for (int j = 0; j <= m; j++) dp[0, j] = j;
-
-            for (int i = 1; i <= n; i++)
-            {
-                for (int j = 1; j <= m; j++)
-                {
-                    int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
-                    dp[i, j] = Math.Min(
-                        Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1),
-                        dp[i - 1, j - 1] + cost);
-                }
-            }
-            return dp[n, m];
-        }
         public static int Levenshtein(string s, string t)
         {
             if (string.IsNullOrEmpty(s)) return t?.Length ?? 0;
@@ -169,40 +146,39 @@ namespace Nec.Web.Config
                     matchedTokens++;
                 }
             }
-
             return matchedTokens == 0 ? 0 : totalScore / matchedTokens;
         }
 
 
         // Search with fuzzy level
-        public static List<SanctionEntity> Search(List<SanctionEntity> dataset, string query, int? fuzzyLevel)
-        {
-            query = query.ToUpper();
-            double threshold = fuzzyLevel switch
-            {
-                0 => 1.0,   // Exact match only
-                1 => 0.90,  // Loose match (e.g. 75%+ similarity)
-                2 => 0.70,  // Aggressive fuzzy (60%+ similarity)
-                _ => 1.0
-            };
+        //public static List<SanctionEntity> Search(List<SanctionEntity> dataset, string query, int? fuzzyLevel)
+        //{
+        //    query = query.ToUpper();
+        //    double threshold = fuzzyLevel switch
+        //    {
+        //        0 => 1.0,   // Exact match only
+        //        1 => 0.90,  // Loose match (e.g. 75%+ similarity)
+        //        2 => 0.70,  // Aggressive fuzzy (60%+ similarity)
+        //        _ => 1.0
+        //    };
 
-            // Parallel search for performance, calculating similarity
-            var results = dataset
-                .AsParallel()
-                .Select(p =>
-                {
-                    string name = p.name.ToUpper();
-                    double sim = fuzzyLevel == 0 ? (name == query ? 1.0 : 0.0) : Similarity(name, query);
-                    return new { Entity = p, Similarity = sim };
-                })
-                .Where(x => x.Similarity >= threshold)
-                .OrderByDescending(x => x.Similarity)  // Descending order of similarity
-                .ThenByDescending(x => x.Entity.source_id)  // Descending by source_id
-                .Select(x => x.Entity)
-                .ToList();
+        //    // Parallel search for performance, calculating similarity
+        //    var results = dataset
+        //        .AsParallel()
+        //        .Select(p =>
+        //        {
+        //            string name = p.name.ToUpper();
+        //            double sim = fuzzyLevel == 0 ? (name == query ? 1.0 : 0.0) : Similarity(name, query);
+        //            return new { Entity = p, Similarity = sim };
+        //        })
+        //        .Where(x => x.Similarity >= threshold)
+        //        .OrderByDescending(x => x.Similarity)  // Descending order of similarity
+        //        .ThenByDescending(x => x.Entity.source_id)  // Descending by source_id
+        //        .Select(x => x.Entity)
+        //        .ToList();
 
-            return results;
-        }
+        //    return results;
+        //}
 
     }
 }

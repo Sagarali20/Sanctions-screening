@@ -63,7 +63,6 @@ namespace Nec.Web.Config
 
             using var scope = _serviceScopeFactory.CreateScope();
             var sanctionService = scope.ServiceProvider.GetRequiredService<ISanctionService>();
-
             List<SanctionEntity> entities = new();
 
             try
@@ -91,7 +90,6 @@ namespace Nec.Web.Config
                             Version = string.Join(", ", header.Value);
                         }
                     }
-
                     string responseBody = await response.Content.ReadAsStringAsync();
                     string[] jsonArray = responseBody.Split(new[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
                     int TotalPrivious = 0, TotalNew = 0, TotalUpdate = 0, TotalDelete = 0;
@@ -105,7 +103,6 @@ namespace Nec.Web.Config
                     aMLSourceLog.SourceName = "Dilisense";
                     aMLSourceLog.SourceLink = _appConfig.DilisenseUrl + FileVersion;
                     aMLSourceLog.SourceCountry = "Zurich and Luxembourg";
-
                     int RowId = sanctionService.CreateAMLLog(aMLSourceLog);
                     aMLSourceLog.TotalPrivious = await sanctionService.TotalDataCount();
                     int Totaldownload = 0;
@@ -141,26 +138,18 @@ namespace Nec.Web.Config
                         }
 
                     }
-
                     bool Res2 = sanctionService.UpdateSanction(UpdateConsolidatedDelta);
-
                     _logger.LogInformation($"###Download successfully done and save  successfully:");
-
-
 
                     aMLSourceLog.TotalNew = TotalNew;
                     aMLSourceLog.TotalUpdate = TotalUpdate;
                     aMLSourceLog.TotalDelete = TotalDelete;
                     aMLSourceLog.TotalData = Totaldownload;
-
-
                     var res = sanctionService.CreateAMLDataStatusLog(aMLSourceLog);
-
                 }
                 else
                 { 
                     Console.WriteLine($"Request failed with status code: {response.StatusCode} ({(int)response.StatusCode})");
-
                 }
 
             }

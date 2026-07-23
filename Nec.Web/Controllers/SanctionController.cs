@@ -699,58 +699,6 @@ namespace Nec.Web.Controllers
 
             var results = await _sanctionService.GetSearchSanctionIndividualForUI(aMLFilter);
 
-            //var res = Levenshtein.FindClosestPersons(results, aMLFilter.Name,1);
-
-            //int gg = Levenshtein.Ltest();
-
-            //if (aMLFilter.IsFuzzy)
-            //{
-            //    //var results1 = Levenshtein.FindClosestPersons(results, aMLFilter.Name, maxDistance:2);
-            //   var results2 = FuzzySearch.Search(results, names, 1);
-            //}
-
-
-
-            //var ff = results.OrderByDescending(a => a.Score);
-            //var selected = results
-            //    .Select((x, index) => new
-            //    {
-            //        x.entity_type,
-            //        x.name,
-            //        x.gender,
-            //        x.source_type,
-            //        x.list_date,
-            //        x.date_of_birth,
-            //        x.alias_names,
-            //        x.last_names,
-            //        x.given_names,
-            //        x.name_remarks,
-            //        x.spouse,
-            //        x.parents,
-            //        x.children,
-            //        x.siblings,
-            //        x.citizenship,
-            //        x.date_of_birth_remarks,
-            //        x.place_of_birth,
-            //        x.place_of_birth_remarks,
-            //        x.address,
-            //        x.address_remarks,
-            //        x.citizenship_remarks,
-            //        x.pep_type,
-            //        x.sanction_details,
-            //        x.description,
-            //        x.occupations,
-            //        x.positions,
-            //        x.political_parties,
-            //        x.links,
-            //        x.titles,
-            //        x.functions,
-            //        x.other_information,
-            //        x.source_id,
-            //        x.Score,
-            //    })
-            //    .ToList().OrderByDescending(a => a.Score);
-
 
             return Ok(new { timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),City= model.Payload?.City,StateProvince = model.Payload?.StateProvince,Country=model.Payload?.Country, DateOfBirth= model.Payload?.DateOfBirth,Name = model.Payload?.Name, Total_hits = results.Count, Max_match_parcentage= results.OrderByDescending(x => x.Score)
                     .Select(x => x.Score)
@@ -822,7 +770,7 @@ namespace Nec.Web.Controllers
 
                     // ================= SEARCH INFO =================
                     section.AddParagraph("Search").Format.Font.Bold = true;
-
+           
                     var searchTable = section.AddTable();
                     searchTable.Borders.Visible = false;
 
