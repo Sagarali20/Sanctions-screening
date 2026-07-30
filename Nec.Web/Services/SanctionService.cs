@@ -24,7 +24,7 @@ namespace Nec.Web.Services
         public IIDbConnection _dbConnection;
 
         private readonly ILogger<SanctionService> _logger;
-
+        private int Maxlimit = 90;
         public SanctionService(IIDbConnection dbConnection, ILogger<SanctionService> logger )
         {
             _dbConnection = dbConnection;
@@ -682,7 +682,6 @@ namespace Nec.Web.Services
                                     ) {1};
                                     ", model.Name,SubQuery);
       
-
             List<SanctionEntity> results = new List<SanctionEntity>();
             try
             {
@@ -736,36 +735,23 @@ namespace Nec.Web.Services
 
                             if (item.Type == "Soundex"  )
                             {
-                               // item.Score = OfacNameMatcher.ComputeScore(model.Name, item.name);
-                               // int finalScore = AmlNameMatcher.CalculateScore(model.Name, item.name);
                                 item.Score = FuzzySearch.CalculateScore(model.Name, item.name);
-
-                                //int Scoreee = Convert.ToInt32(AMLFilterFuzzyMatcher.MatchSingleName(item.name, model.Name).Distance);
-
-                                //if (item.Score >= 86 && model.IsFuzzy == true && 2 >= Scoreee)
-                                if (item.Score >= 90 && model.IsFuzzy == true)
+                                if (item.Score >= Maxlimit && model.IsFuzzy == true)
                                 {
                                     results.Add(item);
                                 }
                             }
                             else
                             {
-                                //int finalScore = FuzzySearch.CalculateScore(model.Name, item.name);
                                 item.Score = 100;
                                 results.Add(item);
                             }
-                            //results.Add(item);
-                            //if (item.AmlId == "2748a58750374a6d")
-                            //{
-                            //    int ff4 = FuzzySearch.CalculateScore(model.Name, item.name);
-
-                            //}
+             
                         }
 
                     }
                 }
 
-                //results.AddRange(res2);
             }
             catch (Exception ex)
             {

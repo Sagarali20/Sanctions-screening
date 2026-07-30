@@ -1095,7 +1095,6 @@ namespace Nec.Web.Controllers
             }
 
             List<SanctionEntity> results = new List<SanctionEntity>();
-
             foreach (var row in result)
             {
                 var lst= await _sanctionService.GetExcelSanctionDetailsBySearch(row.FullName,row.RecordType,row.AddressLine1,row.City,row.State,row.Country,row.DateOfBirth,row.Guid);
@@ -1175,15 +1174,12 @@ namespace Nec.Web.Controllers
 
             }
 
-
             using var ms2 = new MemoryStream();
             wb.Write(ms2, true);        
-
            var fileName = $"sanction_bulk_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xls";
             var content = ms2.ToArray();
             const string mime = "application/vnd.ms-excel";
             return File(content, mime, fileName);
-
 
            // return Ok(result);
         }
@@ -1231,44 +1227,8 @@ namespace Nec.Web.Controllers
 
             return Ok(new { Report = res });
         }
-        //[HttpGet]
-        //[Route("get-test")] 
-        //public async Task<IActionResult> AMLDataStatusSource()
-        //{
-        //    string SingleMessage = _Singleton.GetMessage();
-        //    int SingleCount = _Singleton.GetCount();
-        //    string SingleMessage2 = _Singleton2.GetMessage();
-        //    int SingleCount2 = _Singleton2.GetCount();
 
-        //    string addscope = serviceAddScope.GetMessage();
-        //    int addscopeCount = serviceAddScope.GetCount();
-        //    string addscope2 = serviceAddScope2.GetMessage();
-        //    int addscopeCount2 = serviceAddScope2.GetCount();
-
-        //    string TransientMessage = _Transient.GetMessage();
-        //    int TransientCount = _Transient.GetCount();
-        //    string TransientMessage2 = _Transient2.GetMessage();
-        //    int TransientCount2 = _Transient2.GetCount();
-
-        //    var pp = new
-        //    {
-        //        singleMessage = SingleMessage,
-        //        singleCount = SingleCount,
-        //        singleMessage2 = SingleMessage2,
-        //        singleCount2 = SingleCount2,
-
-        //        transientMessage = TransientMessage,
-        //        transientCount = TransientCount,
-        //        transientMessage2 = TransientMessage2,
-        //        transientCount2 = TransientCount2,
-        //    };
-
-        //    return Ok(pp);
-        //}
-
-        /// <summary>
-        /// Upload SDN XML file and deserialize it
-        /// </summary>
+        // No Use
         [HttpPost("upload")] 
         public async Task<IActionResult> UploadSdnXml(IFormFile file)
         {
@@ -1308,7 +1268,7 @@ namespace Nec.Web.Controllers
                 return BadRequest($"Error reading XML: {ex.Message}");
             }
         }
-
+        // From all source including dilisense,ofac and orhers
         [HttpPost("Common")]
         public async Task<IActionResult> Common(AMLFilter aMLFilter)
         {
@@ -1316,8 +1276,7 @@ namespace Nec.Web.Controllers
             {
                  var res= await _CommonService.GetCommonSearch(aMLFilter);
 
-                //var result2 = res
-                //            .Where(x => x.Score >= aMLFilter.TopMatch).OrderByDescending(x => x.Score);
+
                 var result2 = res
                 .Where(x => x.Score >= aMLFilter.TopMatch)
                 .GroupBy(x => new { x.Guid, x.Id })   
@@ -1326,23 +1285,6 @@ namespace Nec.Web.Controllers
                     .First()).GroupBy(x => x.Guid)
                     .SelectMany(g => g.OrderByDescending(x => x.Score))
                     .ToList();
-
-                //var result = res.Where(x => x?.Score >= aMLFilter.TopMatch).Select(c => new
-                //{
-                //    Id = c.Id,
-                //    FirstName = c.FirstName?.ToString(),
-                //    SecondName = c.SecondName?.ToString(),
-                //    ThirdName = c.ThirdName?.ToString(),
-                //    FourthName = c.FourthName?.ToString(),
-                //    EntityType = c.EntityType?.ToString(),
-                //    DateOfBirth = c.DateOfBirth?.ToString(),
-                //    Address = c.Address?.ToString(),
-                //    Country = c.Country?.ToString(),
-                //    AliasName = c.Aliases?.ToString(),
-                //    Source = c.Source?.ToString(),
-                //    score = c.Score,
-                //    Type=c.Type
-                //}).ToList().OrderByDescending(a => a.score);
 
                 return Ok( new {total= result2.Count(), res= result2 });
 

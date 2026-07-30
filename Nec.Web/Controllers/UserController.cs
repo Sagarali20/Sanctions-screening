@@ -47,7 +47,7 @@ namespace Nec.Web.Controllers
         }
         //[Authorize]
         [HttpPost]
-        //[ApiKeyAuthorize]
+        [ApiKeyAuthorize]
         [Route("process")]
         public async Task<IActionResult> SaveUser(User model)
         {
@@ -183,11 +183,10 @@ namespace Nec.Web.Controllers
         }
         //[Authorize]
         [HttpPost]
-        //[ApiKeyAuthorize]
+        [ApiKeyAuthorize]
         [Route("GetRole")]
         public async Task<IActionResult> GetRole(UserInfoRequest userRequest)
         {
-
             try
             {
                 var roles = await _userService.GetAlLRole();
@@ -209,7 +208,6 @@ namespace Nec.Web.Controllers
                         }
                     }
                 };
-
                 return Ok(response);
             }
             catch (Exception ex)
@@ -372,11 +370,9 @@ namespace Nec.Web.Controllers
         [HttpGet("getCheck")]
         public async Task<IActionResult> getCheck()
         {
-
             try
-            {
-               
-                int a = 0,b=1;
+            {              
+                int a = 0,b = 1;
                 var c = b / a;
 
                 return Ok("ok");
@@ -388,7 +384,6 @@ namespace Nec.Web.Controllers
             }
 
         }
-
         //private async Task<string> CreateRefreshToken()
         //{
         //    var tokenBytes = RandomNumberGenerator.GetBytes(64);
@@ -401,7 +396,6 @@ namespace Nec.Web.Controllers
         //    }
         //    return RefreshToken;
         //}
-
         private ClaimsPrincipal GetPrincipleFromExpiredToken(string token)
         {
             var key = Encoding.ASCII.GetBytes("veryverysecret.....");
